@@ -505,7 +505,7 @@ ui_print " - Disable Deep Buffer -"
 ui_print "   Disable deep buffer?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
 	STEP1=true
 fi
 
@@ -523,7 +523,7 @@ ui_print "***************************************************"
 ui_print "   Install new audio parameters in interal audio codec?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
    STEP2=true
 fi
 
@@ -541,7 +541,7 @@ ui_print "***************************************************"
 ui_print "   Install audio device patches?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
   STEP3=true
 fi
 
@@ -558,7 +558,7 @@ ui_print " - New audio parameters -"
 ui_print "   Install new audio parameters?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
    STEP4=true
 fi
 
@@ -575,7 +575,7 @@ ui_print "***************************************************"
 ui_print "   Configuration?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
    STEP5=true
 fi
 
@@ -607,7 +607,7 @@ ui_print " - Patch device_features files -"
 ui_print "   Configuration?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
   STEP6=true
 fi
 
@@ -624,7 +624,7 @@ ui_print " - Patch audio_param options -"
 ui_print "   Patch?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
    STEP7=true
 fi
 
@@ -641,7 +641,7 @@ ui_print "***************************************************"
 ui_print "   Configuration?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
   STEP8=true
 fi
 
@@ -658,7 +658,7 @@ ui_print " - Patch media codecs -"
 ui_print "   Patch?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
   STEP9=true
 fi
 
@@ -675,7 +675,7 @@ ui_print " - Patch DSM Configs -"
 ui_print "   Patch?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
+if chooseport; then
   STEP10=true
 fi
 
