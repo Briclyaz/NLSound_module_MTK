@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AudioParam>
+	<ParamTree>
+		<Param path="Common" param_id="0"/>
+	</ParamTree>
+	<ParamUnitPool>
+		<ParamUnit param_id="0">
+			<Param name="besloudness" value="0x2"/>
+			<Param name="hifi_audio" value="0x1"/>
+		</ParamUnit>
+	</ParamUnitPool>
+</AudioParam>
