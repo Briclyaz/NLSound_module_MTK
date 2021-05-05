@@ -98,6 +98,7 @@ persist.vendor.radio.vdp_on_ims_cap=1
 persist.vendor.radio.wait_for_pbm=1 
 persist.vendor.sensors.direct_channel=false 
 persist.vendor.service.bdroid.ssrlvl=3 
+ro.ril.enable.amr.wideband=1
 #
 # BT PARAMETERS SOUND BY NLSOUND TEAM
 #
