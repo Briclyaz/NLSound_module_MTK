@@ -492,7 +492,19 @@ dsm_configs() {
 }
 
 ui_print " "
-ui_print " - Disable Deep Buffer -"
+ui_print " - Select language -"
+sleep 1
+ui_print " "
+ui_print "   Vol Up = English, Vol Down = Русский"
+if chooseport; then
+		ui_print " "
+		ui_print " - You selected English language! -"
+		ui_print " "
+		ui_print " - Configurate me, pls >.< -"
+		ui_print " "
+        
+  ui_print " "
+  ui_print " - Disable Deep Buffer -"
   ui_print "***************************************************"
   ui_print "* [1/10]                                          *"
   ui_print "*                                                 *"
@@ -733,4 +745,249 @@ fi
     ui_print " "
     ui_print " - All done! With love, NLSound Team. -"
     ui_print " "
+else
+    ui_print " "
+		ui_print " - Вы выбрали русский язык! -"
+		ui_print " "
+		ui_print " - Настрой меня, пожалуйста >.< -"
+		ui_print " "
+    ui_print " "
+ui_print " - Отключить глубокий буфер. -"
+  ui_print "*************************************************"
+  ui_print "* [1/10]                                        *"
+  ui_print "*                                               *"
+  ui_print "*               Эта опция отключит              *"
+  ui_print "*        глубокий буфер в вашем устройстве.     *"
+  ui_print "*     Если вы ощущаете нехватку низких частот,  *"
+  ui_print "*             и пропустите эту опцию.           *"
+  ui_print "*                                               *"
+  ui_print "*************************************************"
+ui_print "   Отключить глубокий буфер?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+	STEP1=true
+fi
+
+ui_print " "
+ui_print " - Новые аудио параметры для внутреннего аудио кодека -"
+ui_print "***************************************************"
+ui_print "* [2/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*            Эта опция сконфигурирует             *"
+ui_print "*           ваш внутренний аудио кодек.           *"
+ui_print "*          [Рекомендуется для установки]          *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Установить новые параметры для внутреннего аудио кодека?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+   STEP2=true
+fi
+
+ui_print " "
+ui_print " - Audio device патчи -"
+ui_print "***************************************************"
+ui_print "* [3/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*            Эта опция сконфигурирует             *"
+ui_print "*           ваш внутренний аудио кодек.           *"
+ui_print "*          [Рекомендуется для установки]          *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Установить audio device патчи?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+  STEP3=true
+fi
+
+ui_print " "
+ui_print " - Новые аудио параметры-"
+  ui_print "*************************************************"
+  ui_print "* [4/10]                                        *"
+  ui_print "*                                               *"
+  ui_print "*   Эта опция применит новые аудио параметры    *"
+  ui_print "*      для вашего внутреннего аудио кодека      *"
+  ui_print "*           Может вызвать проблемы.             *"
+  ui_print "*                                               *"
+  ui_print "*************************************************"
+ui_print "   Установить новые аудио параметры?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+   STEP4=true
+fi
+
+ui_print " "
+ui_print " - Конфигурация MediaTek Bessound -"
+ui_print "***************************************************"
+ui_print "* [5/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*   Эта опция сконфигурирует MediaTek Bessound    *"
+ui_print "*        технологию в вашем устройстве.           *"
+ui_print "*           Может вызвать проблемы.               *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Сконфигурировать?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+   STEP5=true
+fi
+
+ui_print " "
+ui_print " - Патчинг device_features файлов -"
+  ui_print "*************************************************"
+  ui_print "* [6/10]                                        *"
+  ui_print "*                                               *"
+  ui_print "*        Этот пункт сделает следующее:          *"
+  ui_print "*        - Разблокирует частоту семплирования   *"
+  ui_print "*          аудио вплоть до 384000 кГц;          *"
+  ui_print "*        - Активирует переключатель ААС кодека  *"
+  ui_print "*          в настройках Bluetooth-наушников;    *"
+  ui_print "*        - Активирует поддержку ИИР параметров; *"
+  ui_print "*        - Активирует поддержку стерео записи;  *"
+  ui_print "*        - Активирует поддержку HD записи;      *"
+  ui_print "*        - Активирует поддержку Dolby и Hi-Fi   *"
+  ui_print "*          (на полдерживаемых устройствах);     *"
+  ui_print "*        - Активирует поддержку аудио фокуса    *"
+  ui_print "*          при записи видео;                    *"
+  ui_print "*        - Активирует поддержку быстрого        *"
+  ui_print "*          подключения к Bluetooth наушникам.   *"
+  ui_print "*                                               *"
+  ui_print "*  И многое другое . . .                        *"
+  ui_print "*                                               *"
+  ui_print "*************************************************"
+ui_print "   Установить?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+  STEP6=true
+fi
+
+ui_print " "
+ui_print " - Патчинг audio_param опций -"
+  ui_print "*************************************************"
+  ui_print "* [7/10]                                        *"
+  ui_print "*                                               *"
+  ui_print "*   Этот пункт улучшит настройки аудио пар-ов   *"
+  ui_print "*        вашего внутреннего аудио кодека        *"
+  ui_print "*            Может вызвать проблемы.            *"
+  ui_print "*                                               *"
+  ui_print "*************************************************"
+ui_print "   Патчить?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+   STEP7=true
+fi
+
+ui_print " "
+ui_print " - Сконфигурировать DSP HAL -"
+ui_print "***************************************************"
+ui_print "* [8/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*   Эта опция настроит DSP HAL библиотеки         *"
+ui_print "*        в системе вашего устройства.             *"
+ui_print "*          Может вызвать проблемы.                *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Конфигурировать?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+  STEP8=true
+fi
+
+ui_print " "
+ui_print " - Патчинг media codecs -"
+  ui_print "*************************************************"
+  ui_print "* [9/10]                                        *"
+  ui_print "*                                               *"
+  ui_print "*    Эта опция настроит медиа кодеки в вашей    *"
+  ui_print "*     системе для повышения качества аудио.     *"
+  ui_print "*         [Рекомендуется для установки]         *"
+  ui_print "*                                               *"
+  ui_print "*************************************************"
+ui_print "   Патчить?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+  STEP9=true
+fi
+
+ui_print " "
+ui_print " - Патчинг DSM конфигов -"
+  ui_print "*************************************************"
+  ui_print "* [10/10]                                       *"
+  ui_print "*                                               *"
+  ui_print "*    Этот пункт пропатчит DSM файлы в вашей     *"
+  ui_print "*     системе для повышения качества аудио      *"
+  ui_print "*         [Рекомендуется для установки]         *"
+  ui_print "*                                               *"
+  ui_print "*************************************************"
+ui_print "   Патчить?"
+ui_print " "
+ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+if chooseport; then
+  STEP10=true
+fi
+
+    if [ $STEP1 = true ]; then
+		deep_buffer
+	fi
+
+	if [ $STEP2 = true ]; then
+		audio_codec
+	fi
+
+    ui_print " "
+    ui_print "   ########================================ 20% готово!"
+
+	if [ $STEP3 = true ]; then
+		audio_device
+	fi
+
+	if [ $STEP4 = true ]; then
+		audio_parameters
+	fi
+
+    ui_print " "
+    ui_print "   ################======================== 40% готово!"
+
+	if [ $STEP5 = true ]; then
+        mtk_bessound
+	fi
+
+	if [ $STEP6 = true ]; then
+		device_features
+	fi
+
+    ui_print " "
+    ui_print "   ########################================ 60% готово!"
+
+	if [ $STEP7 = true ]; then
+		audio_param
+	fi
+
+	if [ $STEP8 = true ]; then
+        dsp_hal
+	fi
+
+    ui_print " "
+    ui_print "   ################################======== 80% готово!"
+
+	if [ $STEP9 = true ]; then
+	    media_codecs
+	fi
+
+	if [ $STEP10 = true ]; then
+		dsm_configs
+	fi
+    ui_print " "
+    ui_print " - Всё готово! С любовью, NLSound Team. -"
+    ui_print " "
+  fi
 fi
