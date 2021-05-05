@@ -125,7 +125,6 @@ persist.bluetooth.enabledelayreports=true
 vendor.bt.pts.pbap=true
 persist.vendor.bt.a2dp.aac_whitelist=false
 persist.vendor.bt.a2dp.addr_check_enabled_for_aac=true
-ro.bluetooth.hfp.ver=1.7
 #
 # OTHER PARAMETERS SOUND BY NLSOUND TEAM
 #
