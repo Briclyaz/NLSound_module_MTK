@@ -156,56 +156,24 @@ ui_print " - Redmi 10x Pro 5G device detected! -"
 elif [ "$R10X5G" ]; then
 ui_print " "
 ui_print " - Redmi 10x 5G device detected! -"
-fi
 
-sleep 2
-ui_print " "
-ui_print " - Disable Deep Buffer -"
-  ui_print "***************************************************"
-  ui_print "* [1/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*               This option disable               *"
-  ui_print "*            deep buffer in your device.          *"
-  ui_print "*         If you want more low frequencies,       *"
-  ui_print "*                skip this option.                *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Disable deep buffer?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-ui_print " "
-ui_print " - Processed . . . -"
-sleep 1
-ui_print " "
-ui_print " - Please, wait . . . -"
-	echo -e '\naudio.deep_buffer.media=false\nvendor.audio.deep_buffer.media=false\nqc.audio.deep_buffer.media=false\nro.qc.audio.deep_buffer.media=false\npersist.vendor.audio.deep_buffer.media=false' >> $MODPATH/system.prop
-	sleep 2
-    ui_print " "
-    ui_print " - Deep buffer successfully disabled! -"
-fi
+STEP1=false
+STEP2=false
+STEP3=false
+STEP4=false
+STEP5=false
+STEP6=false
+STEP7=false
+STEP8=false
+STEP9=false
+STEP10=false
 
-ui_print " "
-ui_print " - New audio parameters in interal audio codec -"
-ui_print "***************************************************"
-ui_print "* [2/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*             This option configure               *"
-ui_print "*            your interal audio codec             *"
-ui_print "*       of this option may cause no sound!        *"
-ui_print "*             [RECOMMENDED INSTALL]               *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Install new audio parameters in interal audio codec?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Install new audio parameters in interal audio codec . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-  for OAPO in ${APOS}; do
+deep_buffer() {
+  echo -e '\naudio.deep_buffer.media=false\nvendor.audio.deep_buffer.media=false\nqc.audio.deep_buffer.media=false\nro.qc.audio.deep_buffer.media=false\npersist.vendor.audio.deep_buffer.media=false' >> $MODPATH/system.prop
+}
+
+audio_codec() {
+ for OAPO in ${APOS}; do
     APO="$MODPATH$(echo $OAPO | sed "s|^/vendor|/system/vendor|g")"
     cp_ch $ORIGDIR$OAPO $APO
     sed -i 's/\t/  /g' $APO
@@ -278,33 +246,10 @@ if $VKSEL; then
     patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_BESLOUDNESS_SUPPORT"]' "yes"
 	fi
 	done
-  sleep 2
-  ui_print " "
-  ui_print " - Successfully installed! - "
-fi
+}
 
-sleep 2
-ui_print " "
-ui_print " - Audio device patches -"
-ui_print "***************************************************"
-ui_print "* [3/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*             This option configure               *"
-ui_print "*            your interal audio codec             *"
-ui_print "*       of this option may cause no sound!        *"
-ui_print "*             [RECOMMENDED INSTALL]               *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Install audio device patches?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Install audio device patches . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-  for OADEV in ${ADEVS}; do
+audio_device() {
+ for OADEV in ${ADEVS}; do
     ADEV="$MODPATH$(echo $OADEV | sed "s|^/vendor|/system/vendor|g")"
     cp_ch $ORIGDIR$OADEV $ADEV
     sed -i 's/\t/  /g' $ADEV
@@ -337,32 +282,10 @@ if $VKSEL; then
     patch_xml -u $ADEV '/root/mixercontrol/path[@name="ext_speaker_output"]/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
 	fi
   done
-  sleep 2
-  ui_print " "
-  ui_print " - New audio device patches successfully installed! - "
-fi
+}
 
-sleep 2
-ui_print " "
-ui_print " - New audio parameters -"
-  ui_print "***************************************************"
-  ui_print "* [4/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*       This option applies new perameters        *"
-  ui_print "*          to your device's audio codec.          *"
-  ui_print "*              May cause problems.                *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Install new audio parameters?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Installing new audio parameters . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-  for OAUEM in ${AUEMS}; do
+audio_parameters() {
+ for OAUEM in ${AUEMS}; do
     AUEM="$MODPATH$(echo $OAUEM | sed "s|^/vendor|/system/vendor|g")"
     cp_ch $ORIGDIR$OAUEM $AUEM
     sed -i 's/\t/  /g' $AUEM
@@ -447,32 +370,10 @@ if $VKSEL; then
     patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.aaudio.pcm"]/check' "1"
 	fi
   done
-  sleep 2
-  ui_print " "
-  ui_print " - New audio parameters successfully installed! - "
-fi
+}
 
-sleep 2
-ui_print " "
-ui_print " - Configure MediaTek Bessound -"
-ui_print "***************************************************"
-ui_print "* [5/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*     This option configure MediaTek Bessound     *"
-ui_print "*          technology in your device.             *"
-ui_print "*              May cause problems.                *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Configuration?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Configure . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-  for OAURCONF in ${AURCONFS}; do
+mtk_bessound() {
+ for OAURCONF in ${AURCONFS}; do
     AURCONF="$MODPATH$(echo $OAURCONF | sed "s|^/vendor|/system/vendor|g")"
     cp_ch $ORIGDIR$OAURCONF $AURCONF
     sed -i 's/\t/  /g' $AURCONF
@@ -509,47 +410,10 @@ if $VKSEL; then
 	patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
 	fi
   done
-  sleep 2
-  ui_print " "
-  ui_print " - New audio parameters successfully installed! - "
-fi
+}
 
-sleep 2
-ui_print " "
-ui_print " - Patch device_features files -"
-  ui_print "***************************************************"
-  ui_print "* [6/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*        This step will do the following:         *"
-  ui_print "*        - Unlocks the sampling frequency         *"
-  ui_print "*          of the audio up to 384000 kHz;         *"
-  ui_print "*        - Enable the AAC codec switch in         *"
-  ui_print "*          the Bluetooth headphone settings;      *"
-  ui_print "*        - Enable additional support for          *"
-  ui_print "*          IIR parameters;                        *"
-  ui_print "*        - Enable support for stereo recording;   *"
-  ui_print "*        - Enable support for hd voice            *"
-  ui_print "*          recording quality;                     *"
-  ui_print "*        - Enable Dolby and Hi-Fi support         *"
-  ui_print "*          (on some devices);                     *"
-  ui_print "*        - Enable audio focus support             *"
-  ui_print "*          during video recording;                *"
-  ui_print "*        - Enable support for quick connection    *"
-  ui_print "*          of Bluetooth headphones.               *"
-  ui_print "*                                                 *"
-  ui_print "*  And much more . . .                            *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Configuration?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Configure . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-	if [ "$RN8PRO" ]; then
+device_features() {
+ if [ "$RN8PRO" ]; then
 		cp_ch -f $FEATURES/begonia.xml $MODPATH/system/etc/device_features/begonia.xml
 	fi
 	if [ "$R10X4GNOTE9" ]; then
@@ -561,57 +425,13 @@ if $VKSEL; then
 	if [ "$R10X5G" ]; then
 		cp_ch -f $FEATURES/atom.xml $MODPATH/system/etc/device_features/atom.xml
 	fi
-  sleep 2
-  ui_print " "
-  ui_print " - New device_features files successfully installed! - "
-fi
+}
 
-sleep 2
-ui_print " "
-ui_print " - Patch audio_param options -"
-  ui_print "***************************************************"
-  ui_print "* [7/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*        This step improve audio parameters       *"
-  ui_print "*           in your internal audio codec.         *"
-  ui_print "*                May case problem.                *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Patch?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Installing . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-		cp_ch -f $AUPAR $MODPATH/system/etc/
-  sleep 2
-  ui_print " "
-  ui_print " - New audio parameters successfully installed! - "
-fi
+audio_param() {
+  cp_ch -f $AUPAR $MODPATH/system/etc/
+}
 
-sleep 2
-ui_print " "
-ui_print " - Configure DSP HAL -"
-ui_print "***************************************************"
-ui_print "* [8/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*      This option configure DSP HAL libs         *"
-ui_print "*          technology in your device.             *"
-ui_print "*              May cause problems.                *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Configuration?"
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if $VKSEL; then
-  ui_print " "
-  ui_print " - Configure . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
+dsp_hal() {
   for OAURCONFHIFI in ${AURCONFHIFIS}; do
     AURCONFHIFI="$MODPATH$(echo $OAURCONFHIFI | sed "s|^/vendor|/system/vendor|g")"
     cp_ch $ORIGDIR$OAURCONFHIFI $AURCONFHIFI
@@ -657,12 +477,174 @@ if $VKSEL; then
 	patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
 	fi
   done
-  sleep 2
-  ui_print " "
-  ui_print " - New DSP HAL parameters successfully installed! - "
+}
+
+media_codecs() {
+   cp_ch -f $CODECS/media_codecs_mediatek_audio.xml $MODPATH/system/vendor/etc/media_codecs_mediatek_audio.xml
+   cp_ch -f $CODECS/media_codecs_mediatek_audio.xml $MODPATH/vendor/etc/media_codecs_mediatek_audio.xml
+}
+
+dsm_configs() {
+ cp_ch -f $DSM/DSM_config.xml $MODPATH/system/vendor/etc/DSM_config.xml
+ cp_ch -f $DSM/DSM.xml $MODPATH/system/vendor/etc/DSM.xml
+ cp_ch -f $DSM/DSM_config.xml $MODPATHvendor/etc/DSM_config.xml
+ cp_ch -f $DSM/DSM.xml $MODPATH/vendor/etc/DSM.xml
+}
+
+ui_print " "
+ui_print " - Disable Deep Buffer -"
+  ui_print "***************************************************"
+  ui_print "* [1/10]                                          *"
+  ui_print "*                                                 *"
+  ui_print "*               This option disable               *"
+  ui_print "*            deep buffer in your device.          *"
+  ui_print "*         If you want more low frequencies,       *"
+  ui_print "*                skip this option.                *"
+  ui_print "*                                                 *"
+  ui_print "***************************************************"
+ui_print "   Disable deep buffer?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+	STEP1=true
 fi
 
-sleep 2
+ui_print " "
+ui_print " - New audio parameters in interal audio codec -"
+ui_print "***************************************************"
+ui_print "* [2/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*             This option configure               *"
+ui_print "*            your interal audio codec             *"
+ui_print "*       of this option may cause no sound!        *"
+ui_print "*             [RECOMMENDED INSTALL]               *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Install new audio parameters in interal audio codec?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+   STEP2=true
+fi
+
+ui_print " "
+ui_print " - Audio device patches -"
+ui_print "***************************************************"
+ui_print "* [3/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*             This option configure               *"
+ui_print "*            your interal audio codec             *"
+ui_print "*       of this option may cause no sound!        *"
+ui_print "*             [RECOMMENDED INSTALL]               *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Install audio device patches?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+  STEP3=true
+fi
+
+ui_print " "
+ui_print " - New audio parameters -"
+  ui_print "***************************************************"
+  ui_print "* [4/10]                                          *"
+  ui_print "*                                                 *"
+  ui_print "*       This option applies new perameters        *"
+  ui_print "*          to your device's audio codec.          *"
+  ui_print "*              May cause problems.                *"
+  ui_print "*                                                 *"
+  ui_print "***************************************************"
+ui_print "   Install new audio parameters?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+   STEP4=true
+fi
+
+ui_print " "
+ui_print " - Configure MediaTek Bessound -"
+ui_print "***************************************************"
+ui_print "* [5/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*     This option configure MediaTek Bessound     *"
+ui_print "*          technology in your device.             *"
+ui_print "*              May cause problems.                *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Configuration?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+   STEP5=true
+fi
+
+ui_print " "
+ui_print " - Patch device_features files -"
+  ui_print "***************************************************"
+  ui_print "* [6/10]                                          *"
+  ui_print "*                                                 *"
+  ui_print "*        This step will do the following:         *"
+  ui_print "*        - Unlocks the sampling frequency         *"
+  ui_print "*          of the audio up to 384000 kHz;         *"
+  ui_print "*        - Enable the AAC codec switch in         *"
+  ui_print "*          the Bluetooth headphone settings;      *"
+  ui_print "*        - Enable additional support for          *"
+  ui_print "*          IIR parameters;                        *"
+  ui_print "*        - Enable support for stereo recording;   *"
+  ui_print "*        - Enable support for hd voice            *"
+  ui_print "*          recording quality;                     *"
+  ui_print "*        - Enable Dolby and Hi-Fi support         *"
+  ui_print "*          (on some devices);                     *"
+  ui_print "*        - Enable audio focus support             *"
+  ui_print "*          during video recording;                *"
+  ui_print "*        - Enable support for quick connection    *"
+  ui_print "*          of Bluetooth headphones.               *"
+  ui_print "*                                                 *"
+  ui_print "*  And much more . . .                            *"
+  ui_print "*                                                 *"
+  ui_print "***************************************************"
+ui_print "   Configuration?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+  STEP6=true
+fi
+
+ui_print " "
+ui_print " - Patch audio_param options -"
+  ui_print "***************************************************"
+  ui_print "* [7/10]                                          *"
+  ui_print "*                                                 *"
+  ui_print "*        This step improve audio parameters       *"
+  ui_print "*           in your internal audio codec.         *"
+  ui_print "*                May case problem.                *"
+  ui_print "*                                                 *"
+  ui_print "***************************************************"
+ui_print "   Patch?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+   STEP7=true
+fi
+
+ui_print " "
+ui_print " - Configure DSP HAL -"
+ui_print "***************************************************"
+ui_print "* [8/10]                                          *"
+ui_print "*                                                 *"
+ui_print "*      This option configure DSP HAL libs         *"
+ui_print "*          technology in your device.             *"
+ui_print "*              May cause problems.                *"
+ui_print "*                                                 *"
+ui_print "***************************************************"
+ui_print "   Configuration?"
+ui_print " "
+ui_print "   Vol Up = YES, Vol Down = NO"
+if $VKSEL; then
+  STEP8=true
+fi
+
 ui_print " "
 ui_print " - Patch media codecs -"
   ui_print "***************************************************"
@@ -677,19 +659,9 @@ ui_print "   Patch?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if $VKSEL; then
-  ui_print " "
-  ui_print " - Installing . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-		cp_ch -f $CODECS/media_codecs_mediatek_audio.xml $MODPATH/system/vendor/etc/media_codecs_mediatek_audio.xml
-		cp_ch -f $CODECS/media_codecs_mediatek_audio.xml $MODPATH/vendor/etc/media_codecs_mediatek_audio.xml
-  sleep 2
-  ui_print " "
-  ui_print " - Well done. - "
+  STEP9=true
 fi
 
-sleep 2
 ui_print " "
 ui_print " - Patch DSM Configs -"
   ui_print "***************************************************"
@@ -704,23 +676,61 @@ ui_print "   Patch?"
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if $VKSEL; then
-  ui_print " "
-  ui_print " - Installing . . . -"
-  sleep 1
-  ui_print " "
-  ui_print " - Please, wait . . . -"
-		cp_ch -f $DSM/DSM_config.xml $MODPATH/system/vendor/etc/DSM_config.xml
-		cp_ch -f $DSM/DSM.xml $MODPATH/system/vendor/etc/DSM.xml
-		cp_ch -f $DSM/DSM_config.xml $MODPATHvendor/etc/DSM_config.xml
-		cp_ch -f $DSM/DSM.xml $MODPATH/vendor/etc/DSM.xml
-  sleep 2
-  ui_print " "
-  ui_print " - Well done. - "
+  STEP10=true
 fi
 
-ui_print " "
-ui_print " - Done. -"
-sleep 2
-ui_print " "
-ui_print " - With love, NLSound Team. -"
-ui_print " "
+    if [ $STEP1 = true ]; then
+		deep_buffer
+	fi
+
+	if [ $STEP2 = true ]; then
+		audio_codec
+	fi
+
+    ui_print " "
+    ui_print "   ########================================ 20% ready!"
+
+	if [ $STEP3 = true ]; then
+		audio_device
+	fi
+
+	if [ $STEP4 = true ]; then
+		audio_parameters
+	fi
+
+    ui_print " "
+    ui_print "   ################======================== 40% ready!"
+
+	if [ $STEP5 = true ]; then
+        mtk_bessound
+	fi
+
+	if [ $STEP6 = true ]; then
+		device_features
+	fi
+
+    ui_print " "
+    ui_print "   ########################================ 60% ready!"
+
+	if [ $STEP7 = true ]; then
+		audio_param
+	fi
+
+	if [ $STEP8 = true ]; then
+        dsp_hal
+	fi
+
+    ui_print " "
+    ui_print "   ################################======== 80% ready!"
+
+	if [ $STEP9 = true ]; then
+	    media_codecs
+	fi
+
+	if [ $STEP10 = true ]; then
+		dsm_configs
+	fi
+    ui_print " "
+    ui_print " - All done! With love, NLSound Team. -"
+    ui_print " "
+fi
