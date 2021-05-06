@@ -134,6 +134,9 @@ DSM=$MODPATH/common/NLSound/dsm
 SETC=/system/SETC
 SVSETC=/system/vendor/SETC
 
+DEVFEA=/system/etc/device_features/*.xml
+DEVFEAA=/vendor/etc/device_features/*.xml
+
 APOS="$(find /system /vendor -type f -name "*AudioParamOptions.xml")"
 ADEVS="$(find /system /vendor -type f -name "*audio_device.xml")"
 AUEMS="$(find /system /vendor -type f -name "*audio_em.xml")"
@@ -412,19 +415,42 @@ mtk_bessound() {
   done
 }
 
-device_features() {
- if [ "$RN8PRO" ]; then
-		cp_ch -f $FEATURES/begonia.xml $MODPATH/system/etc/device_features/begonia.xml
-	fi
-	if [ "$R10X4GNOTE9" ]; then
-		cp_ch -f $FEATURES/merlin.xml $MODPATH/system/etc/device_features/merlin.xml
-	fi
-	if [ "$R10X4GNOTE9" ]; then
-		cp_ch -f $FEATURES/bomb.xml $MODPATH/system/etc/device_features/bomb.xml
-	fi
-	if [ "$R10X5G" ]; then
-		cp_ch -f $FEATURES/atom.xml $MODPATH/system/etc/device_features/atom.xml
-	fi
+device_features_system() {
+	for ODEVFEA in ${DEVFEA}; do 
+		DEVFEA="$MODPATH$(echo $ODEVFEA | sed "s|^/vendor|/system/vendor|g")"
+		cp_ch $ORIGDIR$ODEVFEA $DEVFEA
+		sed -i 's/\t/  /g' $DEVFEA
+			patch_xml -s $DEVFEA '/features/bool[@name="support_a2dp_latency"]' "true"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_samplerate_48000"]' "true"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_samplerate_96000"]' "true"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_samplerate_192000"]' "true"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_low_latency"]' "true"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_mid_latency"]' "false"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_high_latency"]' "false"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_interview_record_param"]' "false"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_voip_record"]' "true"
+			patch_xml -s $DEVFEA '/features/integer[@name="support_inner_record"]' "1"
+			patch_xml -s $DEVFEA '/features/bool[@name="support_hifi"]' "true"
+		done
+}
+
+device_features_vendor() {
+	for ODEVFEAA in ${DEVFEAA}; do 
+		DEVFEAA="$MODPATH$(echo $ODEVFEAA | sed "s|^/vendor|/system/vendor|g")"
+		cp_ch $ORIGDIR$ODEVFEAA $DEVFEAA
+		sed -i 's/\t/  /g' $DEVFEAA
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_a2dp_latency"]' "true"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_samplerate_48000"]' "true"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_samplerate_96000"]' "true"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_samplerate_192000"]' "true"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_low_latency"]' "true"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_mid_latency"]' "false"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_high_latency"]' "false"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_interview_record_param"]' "false"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_voip_record"]' "true"
+			patch_xml -s $DEVFEAA '/features/integer[@name="support_inner_record"]' "1"
+			patch_xml -s $DEVFEAA '/features/bool[@name="support_hifi"]' "true"
+		done
 }
 
 audio_param() {
@@ -728,7 +754,11 @@ fi
 	fi
 
 	if [ $STEP6 = true ]; then
-		device_features
+		if [ -f $DEVFEA ]; then
+		device_features_system
+      elif [ -f $DEVFEAA ]; then
+        device_features_vendor
+      fi
 	fi
 
     ui_print " "
@@ -982,7 +1012,11 @@ fi
 	fi
 
 	if [ $STEP6 = true ]; then
-		device_features
+		if [ -f $DEVFEA ]; then
+		device_features_system
+      elif [ -f $DEVFEAA ]; then
+        device_features_vendor
+      fi
 	fi
 
     ui_print " "
