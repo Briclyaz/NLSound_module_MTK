@@ -120,7 +120,7 @@ MTKG90T=$(grep "ro.board.platform=mt6785" $BUILDS)
 HELIOG85=$(grep "ro.board.platform=mt6768" $BUILDS)
 MT6875=$(grep "ro.board.platform=mt6873" $BUILDS)
 
-RN8PRO=$(grep -E "ro.product.vendor.device=begonia.*" $BUILDS)
+RN8PRO=$(grep -E "ro.product.vendor.device=begonia.*|ro.product.vendor.device=begonianin.*" $BUILDS)
 R10X4GNOTE9=$(grep -E "ro.product.vendor.device=merlin.*" $BUILDS)
 R10XPRO5G=$(grep -E "ro.product.vendor.device=bomb.*" $BUILDS)
 R10X5G=$(grep -E "ro.product.vendor.device=atom.*" $BUILDS)
@@ -146,19 +146,6 @@ AURCONFHIFIS="$(find /system /vendor -type f -name "*aurisys_config.xml")"
 mkdir -p $MODPATH/tools
 cp -f $MODPATH/common/addon/External-Tools/tools/$ARCH32/* $MODPATH/tools/
 chmod -R 0755 $MODPATH/tools
-
-if [ "$RN8PRO" ]; then
-ui_print " "
-ui_print "- Redmi Note 8 Pro device detected! -"
-elif [ "$R10X4GNOTE9" ]; then
-ui_print " "
-ui_print " - Redmi 10x 4G or Redmi Note 9 devices detected! -"
-elif [ "$R10XPRO5G" ]; then
-ui_print " "
-ui_print " - Redmi 10x Pro 5G device detected! -"
-elif [ "$R10X5G" ]; then
-ui_print " "
-ui_print " - Redmi 10x 5G device detected! -"
 
 STEP1=false
 STEP2=false
