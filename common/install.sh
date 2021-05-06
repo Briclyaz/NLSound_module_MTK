@@ -515,6 +515,7 @@ if chooseport; then
   ui_print "*                                                 *"
   ui_print "***************************************************"
 ui_print "   Disable deep buffer?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -533,6 +534,7 @@ ui_print "*             [RECOMMENDED INSTALL]               *"
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Install new audio parameters in interal audio codec?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -551,6 +553,7 @@ ui_print "*             [RECOMMENDED INSTALL]               *"
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Install audio device patches?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -568,6 +571,7 @@ ui_print " - New audio parameters -"
   ui_print "*                                                 *"
   ui_print "***************************************************"
 ui_print "   Install new audio parameters?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -585,6 +589,7 @@ ui_print "*              May cause problems.                *"
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Configuration?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -617,6 +622,7 @@ ui_print " - Patch device_features files -"
   ui_print "*                                                 *"
   ui_print "***************************************************"
 ui_print "   Configuration?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -634,6 +640,7 @@ ui_print " - Patch audio_param options -"
   ui_print "*                                                 *"
   ui_print "***************************************************"
 ui_print "   Patch?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -651,6 +658,7 @@ ui_print "*              May cause problems.                *"
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Configuration?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -668,6 +676,7 @@ ui_print " - Patch media codecs -"
   ui_print "*                                                 *"
   ui_print "***************************************************"
 ui_print "   Patch?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -685,6 +694,7 @@ ui_print " - Patch DSM Configs -"
   ui_print "*                                                 *"
   ui_print "***************************************************"
 ui_print "   Patch?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = YES, Vol Down = NO"
 if chooseport; then
@@ -763,6 +773,7 @@ ui_print " - Отключить глубокий буфер. -"
   ui_print "*                                               *"
   ui_print "*************************************************"
 ui_print "   Отключить глубокий буфер?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -780,6 +791,7 @@ ui_print "*          [Рекомендуется для установки]     
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Установить новые параметры для внутреннего аудио кодека?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -797,6 +809,7 @@ ui_print "*          [Рекомендуется для установки]     
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Установить audio device патчи?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -814,6 +827,7 @@ ui_print " - Новые аудио параметры-"
   ui_print "*                                               *"
   ui_print "*************************************************"
 ui_print "   Установить новые аудио параметры?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -831,6 +845,7 @@ ui_print "*           Может вызвать проблемы.               
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Сконфигурировать?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -861,6 +876,7 @@ ui_print " - Патчинг device_features файлов -"
   ui_print "*                                               *"
   ui_print "*************************************************"
 ui_print "   Установить?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -878,6 +894,7 @@ ui_print " - Патчинг audio_param опций -"
   ui_print "*                                               *"
   ui_print "*************************************************"
 ui_print "   Патчить?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -895,6 +912,7 @@ ui_print "*          Может вызвать проблемы.                
 ui_print "*                                                 *"
 ui_print "***************************************************"
 ui_print "   Конфигурировать?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -912,6 +930,7 @@ ui_print " - Патчинг media codecs -"
   ui_print "*                                               *"
   ui_print "*************************************************"
 ui_print "   Патчить?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
@@ -929,6 +948,7 @@ ui_print " - Патчинг DSM конфигов -"
   ui_print "*                                               *"
   ui_print "*************************************************"
 ui_print "   Патчить?"
+sleep 1
 ui_print " "
 ui_print "   Vol Up = ДА, Vol Down = НЕТ"
 if chooseport; then
