@@ -1,6 +1,6 @@
 id=NLSound
 name=NLSound [MTK Devices]
-version=0.3 BETA
+version=0.3 STABLE
 versionCode=7
 author=NLSound Team
 description=This module globally improves audio quality when recording video/audio and listening to audio on your device.
