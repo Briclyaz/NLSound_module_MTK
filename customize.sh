@@ -13,7 +13,7 @@
 # Uncomment DEBUG if you want full debug logs (saved to /sdcard)
 MINAPI=28
 #MAXAPI=30
-#DYNLIB=true
+DYNLIB=true
 DEBUG=true
 
 ##########################################################################################
@@ -34,6 +34,8 @@ REPLACE_EXAMPLE="
 
 # Construct your own list here
 REPLACE="
+/system/priv-app/MusicFX
+/system/priv-app/AudioFX
 "
 
 ##########################################################################################
@@ -41,7 +43,9 @@ REPLACE="
 ##########################################################################################
 
 set_permissions() {
-  : # Remove this if adding to this function
+  chown 0.2000 $MODPATH/system/vendor $MODPATH/system/vendor/etc $MODPATH/system/vendor/lib $MODPATH/system/vendor/lib/soundfx $MODPATH/system/vendor/lib64 $MODPATH/system/vendor/lib64/soundfx
+  chcon -R u:object_r:vendor_file:s0 $MODPATH/system/vendor
+  chcon -R u:object_r:vendor_configs_file:s0 $MODPATH/system/vendor/etc
 
   # Note that all files/folders in magisk module directory have the $MODPATH prefix - keep this prefix on all of your files/folders
   # Some examples:
