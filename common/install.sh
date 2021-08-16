@@ -1,39 +1,3 @@
-set_perm() {
-	chown $1:$2 $4
-	chmod $3 $4
-	case $4 in
-		*/vendor/etc/*)
-			chcon 'u:object_r:vendor_configs_file:s0' $4
-		;;
-		*/vendor/*)
-			chcon 'u:object_r:vendor_file:s0' $4
-		;;
-		*/data/adb/*.d/*)
-			chcon 'u:object_r:adb_data_file:s0' $4
-		;;
-		*)
-			chcon 'u:object_r:system_file:s0' $4
-		;;
-	esac
-}
-
-cp_perm() {
-  if [ -f "$4" ]; then
-    rm -f $5
-    cat $4 > $5
-    set_perm $1 $2 $3 $5
-  fi
-}
-
-set_perm_recursive() {
-	find $5 -type d | while read dir; do
-		set_perm $1 $2 $3 $dir
-	done
-	find $5 -type f -o -type l | while read file; do
-		set_perm $1 $2 $4 $file
-	done
-}
-
 nlsound() {
   case $1 in
     *.conf) SPACES=$(sed -n "/^output_session_processing {/,/^}/ {/^ *music {/p}" $1 | sed -r "s/( *).*/\1/")
@@ -157,6 +121,8 @@ STEP7=false
 STEP8=false
 STEP9=false
 STEP10=false
+
+ALL=false
 
 deep_buffer() {
   echo -e '\naudio.deep_buffer.media=false\nvendor.audio.deep_buffer.media=false\nqc.audio.deep_buffer.media=false\nro.qc.audio.deep_buffer.media=false\npersist.vendor.audio.deep_buffer.media=false' >> $MODPATH/system.prop
@@ -504,530 +470,811 @@ dsm_configs() {
  cp_ch -f $DSM/DSM.xml $MODPATH/vendor/etc/DSM.xml
 }
 
-ui_print " "
-ui_print " - Select language -"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = English, Vol Down = Русский"
-if chooseport; then
+AUTO_EN() {
+	ui_print " "
+    ui_print " - You selected AUTO installation mode - "
+    AUTO_In=true
+	
+	ui_print " "
+	ui_print " - The installation has started! - "
+	
+	ui_print " "
+	ui_print "     Please wait until it is completed. "
+	ui_print "     The installation time can vary from "
+	ui_print "     one minute to ten minutes depending "
+	ui_print "     on your device and the ROM used "
+   
+    if [ $AUTO_In = true ]; then
+		deep_buffer
+	fi
+	
+	if [ $AUTO_In = true ]; then
+		audio_codec
+	fi
+ 
+    ui_print " "
+    ui_print "   ########================================= 20% done!"
+	
+	if [ $AUTO_In = true ]; then
+		mtk_bessound
+	fi
+	
+	ui_print " "
+    ui_print "   ##################====================== 45% done!"
+	
+	if [ $AUTO_In = true ]; then
+		audio_codec
+	fi
+	
+	ui_print " "
+    ui_print "   ########################================ 60% done!"
+	
+	if [ $AUTO_In = true ]; then
+      if [ -f /$sys_tem/etc/device_features/*.xml ]; then
+		device_features_system
+      elif [ -f /$sys_tem/vendor/etc/device_features/*.xml ]; then
+        device_features_vendor
+      fi
+	fi
+	
+	if [ $AUTO_In = true ]; then
+		media_codecs
+	fi
+	
+	ui_print " "
+    ui_print "   ######################################## 100% done!"
+	
+	ui_print " "
+	ui_print " - All done! "
+}
+
+AUTO_RU() {
+	ui_print " "
+	ui_print " - Вы выбрали режим установки АВТО - "
+    AUTO_In=true
+	
+	ui_print " "
+	ui_print " - Установка началась! - "
+	
+	ui_print " "
+	ui_print "     Пожалуйста дождитесь завершения. "
+	ui_print "     Время установки может варьироваться "
+	ui_print "     от одной до пяти минут в зависимости от "
+	ui_print "     вашего устройства и используемой прошивки. "
+   
+	if [ $AUTO_In = true ]; then
+		deep_buffer
+	fi
+	
+	if [ $AUTO_In = true ]; then
+		audio_codec
+	fi
+ 
+    ui_print " "
+    ui_print "   ########================================= 20% done!"
+	
+	if [ $AUTO_In = true ]; then
+		mtk_bessound
+	fi
+	
+	ui_print " "
+    ui_print "   ##################====================== 45% done!"
+	
+	if [ $AUTO_In = true ]; then
+		audio_codec
+	fi
+	
+	ui_print " "
+    ui_print "   ########################================ 60% done!"
+	
+	if [ $AUTO_In = true ]; then
+      if [ -f /$sys_tem/etc/device_features/*.xml ]; then
+		device_features_system
+      elif [ -f /$sys_tem/vendor/etc/device_features/*.xml ]; then
+        device_features_vendor
+      fi
+	fi
+	
+	if [ $AUTO_In = true ]; then
+		media_codecs
+	fi
+	
+	ui_print " "
+    ui_print "   ######################################## 100% готово!"
+	
+	ui_print " "
+	ui_print " - Всё готово! "
+}
+
+English() { 
+	  ENG_CHK=1
+	  ui_print " "
+	  ui_print " - You selected English language! -"
+	  ui_print " "
+	  ui_print " - Select installation mode: "
+	  ui_print " "
+	  ui_print " - NOTE: [VOL+] - select, [VOL-] - confirm "
+	  ui_print " "
+	  ui_print " 1. Auto (Only the most necessary things"
+	  ui_print "    for your device will be installed)"
+	  ui_print " "
+	  ui_print " 2. Manual (You configure the module yourself)"
+	  ui_print " "
+	  ui_print " "
+	  ui_print " 3. Install all (For experienced users, may cause problems)"
+	  ui_print " "
+	  ui_print "        Selected: "
+	  ui_print " "
+	  
+	  while true; do
+	  ui_print "------>    $ENG_CHK    step"
+	  ui_print " "
+	  if $VKSEL; then
+		ENG_CHK=$((ENG_CHK + 1))
+		ALL=true
+	  else
+		break
+	  fi
+		
+	  if [ $ENG_CHK -gt 3 ]; then
+		ENG_CHK=1
+	  fi
+done
+
+case $ENG_CHK in
+	1) AUTO_EN;;
+	2) ENG_Manual;;
+	3) All_En;;
+esac
+}
+
+Russian() {  
+	  RU_CHK=1
+	  ui_print " "
+	  ui_print " - Вы выбрали Русский язык! -"
+	  ui_print " "
+	  ui_print " - Выберите режим установки: "
+	  ui_print " "
+	  ui_print " - Заметка: [VOL+] - выбор, [VOL-] - подтверждение "
+	  ui_print " "
+	  ui_print " 1. Авто (Только самое необходимое для"
+	  ui_print "    вашего устройства будет установлено)"
+	  ui_print " "
+	  ui_print " 2. Ручной (Вы самостоятельно настраиваете модуль)"
+	  ui_print " "
+	  ui_print " "
+	  ui_print " 3. Установить всё (Для опытных пользователей, может вызвать проблемы)"
+	  ui_print " "
+	  ui_print "        Выбран: "
+	  ui_print " "
+	  while true; do
+	  ui_print "------>    $RU_CHK    пункт"
+	  ui_print " "
+	  if $VKSEL; then
+		RU_CHK=$((RU_CHK + 1))
+		ALL=true
+	  else
+		break
+	  fi
+		
+	  if [ $RU_CHK -gt 3 ]; then
+		RU_CHK=1
+	  fi
+done
+
+case $RU_CHK in
+	1) AUTO_RU;;
+	2) RU_Manual;;
+	3) All_Ru;;
+esac
+}
+	
+ENG_Manual() {
 		ui_print " "
 		ui_print " - You selected English language! -"
 		ui_print " "
 		ui_print " - Configurate me, pls >.< -"
 		ui_print " "
-        
-  ui_print " "
-  ui_print " - Disable Deep Buffer -"
-  ui_print "***************************************************"
-  ui_print "* [1/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*               This option disable               *"
-  ui_print "*            deep buffer in your device.          *"
-  ui_print "*         If you want more low frequencies,       *"
-  ui_print "*                skip this option.                *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Disable deep buffer?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-	STEP1=true
-fi
+			
+		ui_print " "
+		ui_print " - Disable Deep Buffer -"
+		ui_print "***************************************************"
+		ui_print "* [1/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*               This option disable               *"
+		ui_print "*            deep buffer in your device.          *"
+		ui_print "*         If you want more low frequencies,       *"
+		ui_print "*                skip this option.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Disable deep buffer?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+				STEP1=true
+		fi
 
-ui_print " "
-ui_print " - New audio parameters in interal audio codec -"
-ui_print "***************************************************"
-ui_print "* [2/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*             This option configure               *"
-ui_print "*            your interal audio codec             *"
-ui_print "*       of this option may cause no sound!        *"
-ui_print "*             [RECOMMENDED INSTALL]               *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Install new audio parameters in interal audio codec?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-   STEP2=true
-fi
+		ui_print " "
+		ui_print " - New audio parameters in interal audio codec -"
+		ui_print "***************************************************"
+		ui_print "* [2/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*             This option configure               *"
+		ui_print "*            your interal audio codec             *"
+		ui_print "*       of this option may cause no sound!        *"
+		ui_print "*             [RECOMMENDED INSTALL]               *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Install new audio parameters in interal audio codec?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP2=true
+		fi
 
-ui_print " "
-ui_print " - Audio device patches -"
-ui_print "***************************************************"
-ui_print "* [3/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*             This option configure               *"
-ui_print "*            your interal audio codec             *"
-ui_print "*       of this option may cause no sound!        *"
-ui_print "*             [RECOMMENDED INSTALL]               *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Install audio device patches?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-  STEP3=true
-fi
+		ui_print " "
+		ui_print " - Audio device patches -"
+		ui_print "***************************************************"
+		ui_print "* [3/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*             This option configure               *"
+		ui_print "*            your interal audio codec             *"
+		ui_print "*       of this option may cause no sound!        *"
+		ui_print "*             [RECOMMENDED INSTALL]               *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Install audio device patches?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP3=true
+		fi
 
-ui_print " "
-ui_print " - New audio parameters -"
-  ui_print "***************************************************"
-  ui_print "* [4/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*       This option applies new perameters        *"
-  ui_print "*          to your device's audio codec.          *"
-  ui_print "*              May cause problems.                *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Install new audio parameters?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-   STEP4=true
-fi
+		ui_print " "
+		ui_print " - New audio parameters -"
+		ui_print "***************************************************"
+		ui_print "* [4/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*       This option applies new perameters        *"
+		ui_print "*          to your device's audio codec.          *"
+		ui_print "*              May cause problems.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Install new audio parameters?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP4=true
+		fi
 
-ui_print " "
-ui_print " - Configure MediaTek Bessound -"
-ui_print "***************************************************"
-ui_print "* [5/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*     This option configure MediaTek Bessound     *"
-ui_print "*          technology in your device.             *"
-ui_print "*              May cause problems.                *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Configuration?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-   STEP5=true
-fi
+		ui_print " "
+		ui_print " - Configure MediaTek Bessound -"
+		ui_print "***************************************************"
+		ui_print "* [5/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*     This option configure MediaTek Bessound     *"
+		ui_print "*          technology in your device.             *"
+		ui_print "*              May cause problems.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Configuration?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP5=true
+		fi
 
-ui_print " "
-ui_print " - Patch device_features files -"
-  ui_print "***************************************************"
-  ui_print "* [6/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*        This step will do the following:         *"
-  ui_print "*        - Unlocks the sampling frequency         *"
-  ui_print "*          of the audio up to 384000 kHz;         *"
-  ui_print "*        - Enable the AAC codec switch in         *"
-  ui_print "*          the Bluetooth headphone settings;      *"
-  ui_print "*        - Enable additional support for          *"
-  ui_print "*          IIR parameters;                        *"
-  ui_print "*        - Enable support for stereo recording;   *"
-  ui_print "*        - Enable support for hd voice            *"
-  ui_print "*          recording quality;                     *"
-  ui_print "*        - Enable Dolby and Hi-Fi support         *"
-  ui_print "*          (on some devices);                     *"
-  ui_print "*        - Enable audio focus support             *"
-  ui_print "*          during video recording;                *"
-  ui_print "*        - Enable support for quick connection    *"
-  ui_print "*          of Bluetooth headphones.               *"
-  ui_print "*                                                 *"
-  ui_print "*  And much more . . .                            *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Configuration?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-  STEP6=true
-fi
+		ui_print " "
+		ui_print " - Patch device_features files -"
+		ui_print "***************************************************"
+		ui_print "* [6/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*        This step will do the following:         *"
+		ui_print "*        - Unlocks the sampling frequency         *"
+		ui_print "*          of the audio up to 384000 kHz;         *"
+		ui_print "*        - Enable the AAC codec switch in         *"
+		ui_print "*          the Bluetooth headphone settings;      *"
+		ui_print "*        - Enable additional support for          *"
+		ui_print "*          IIR parameters;                        *"
+		ui_print "*        - Enable support for stereo recording;   *"
+		ui_print "*        - Enable support for hd voice            *"
+		ui_print "*          recording quality;                     *"
+		ui_print "*        - Enable Dolby and Hi-Fi support         *"
+		ui_print "*          (on some devices);                     *"
+		ui_print "*        - Enable audio focus support             *"
+		ui_print "*          during video recording;                *"
+		ui_print "*        - Enable support for quick connection    *"
+		ui_print "*          of Bluetooth headphones.               *"
+		ui_print "*                                                 *"
+		ui_print "*  And much more . . .                            *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Configuration?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP6=true
+		fi
 
-ui_print " "
-ui_print " - Patch audio_param options -"
-  ui_print "***************************************************"
-  ui_print "* [7/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*        This step improve audio parameters       *"
-  ui_print "*           in your internal audio codec.         *"
-  ui_print "*                May case problem.                *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Patch?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-   STEP7=true
-fi
+		ui_print " "
+		ui_print " - Patch audio_param options -"
+		ui_print "***************************************************"
+		ui_print "* [7/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*        This step improve audio parameters       *"
+		ui_print "*           in your internal audio codec.         *"
+		ui_print "*                May case problem.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Patch?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP7=true
+		fi
 
-ui_print " "
-ui_print " - Configure DSP HAL -"
-ui_print "***************************************************"
-ui_print "* [8/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*      This option configure DSP HAL libs         *"
-ui_print "*          technology in your device.             *"
-ui_print "*              May cause problems.                *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Configuration?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-  STEP8=true
-fi
+		ui_print " "
+		ui_print " - Configure DSP HAL -"
+		ui_print "***************************************************"
+		ui_print "* [8/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*      This option configure DSP HAL libs         *"
+		ui_print "*          technology in your device.             *"
+		ui_print "*              May cause problems.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Configuration?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP8=true
+		fi
 
-ui_print " "
-ui_print " - Patch media codecs -"
-  ui_print "***************************************************"
-  ui_print "* [9/10]                                          *"
-  ui_print "*                                                 *"
-  ui_print "*        This step patching media codecs          *"
-  ui_print "*     in your system for improving quality.       *"
-  ui_print "*         Recommended for installation.           *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Patch?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-  STEP9=true
-fi
+		ui_print " "
+		ui_print " - Patch media codecs -"
+		ui_print "***************************************************"
+		ui_print "* [9/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*        This step patching media codecs          *"
+		ui_print "*     in your system for improving quality.       *"
+		ui_print "*         Recommended for installation.           *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Patch?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP9=true
+		fi
 
-ui_print " "
-ui_print " - Patch DSM Configs -"
-  ui_print "***************************************************"
-  ui_print "* [10/10]                                         *"
-  ui_print "*                                                 *"
-  ui_print "*        This step patching DSM files             *"
-  ui_print "*     in your system for improving quality.       *"
-  ui_print "*         Recommended for installation.           *"
-  ui_print "*                                                 *"
-  ui_print "***************************************************"
-ui_print "   Patch?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = YES, Vol Down = NO"
-if chooseport; then
-  STEP10=true
-fi
+		ui_print " "
+		ui_print " - Patch DSM Configs -"
+		ui_print "***************************************************"
+		ui_print "* [10/10]                                         *"
+		ui_print "*                                                 *"
+		ui_print "*        This step patching DSM files             *"
+		ui_print "*     in your system for improving quality.       *"
+		ui_print "*         Recommended for installation.           *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Patch?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+			STEP10=true
+		fi
 
-    if [ $STEP1 = true ]; then
-		deep_buffer
-	fi
+		if [ $STEP1 = true ]; then
+			deep_buffer
+		fi
 
-	if [ $STEP2 = true ]; then
-		audio_codec
-	fi
+		if [ $STEP2 = true ]; then
+			audio_codec
+		fi
 
-    ui_print " "
-    ui_print "   ########================================ 20% ready!"
+		ui_print " "
+		ui_print "   ########================================ 20% ready!"
 
-	if [ $STEP3 = true ]; then
-		audio_device
-	fi
+		if [ $STEP3 = true ]; then
+			audio_device
+		fi
 
-	if [ $STEP4 = true ]; then
-		audio_parameters
-	fi
+		if [ $STEP4 = true ]; then
+			audio_parameters
+		fi
 
-    ui_print " "
-    ui_print "   ################======================== 40% ready!"
+		ui_print " "
+		ui_print "   ################======================== 40% ready!"
 
-	if [ $STEP5 = true ]; then
-        mtk_bessound
-	fi
+		if [ $STEP5 = true ]; then
+			mtk_bessound
+		fi
 
-	if [ $STEP6 = true ]; then
-		if [ -f $DEVFEA ]; then
-		device_features_system
-      elif [ -f $DEVFEAA ]; then
-        device_features_vendor
-      fi
-	fi
+		if [ $STEP6 = true ]; then
+			if [ -f $DEVFEA ]; then
+			device_features_system
+		  elif [ -f $DEVFEAA ]; then
+			device_features_vendor
+		  fi
+		fi
 
-    ui_print " "
-    ui_print "   ########################================ 60% ready!"
+		ui_print " "
+		ui_print "   ########################================ 60% ready!"
 
-	if [ $STEP7 = true ]; then
-		audio_param
-	fi
+		if [ $STEP7 = true ]; then
+			audio_param
+		fi
 
-	if [ $STEP8 = true ]; then
-        dsp_hal
-	fi
+		if [ $STEP8 = true ]; then
+			dsp_hal
+		fi
 
-    ui_print " "
-    ui_print "   ################################======== 80% ready!"
+		ui_print " "
+		ui_print "   ################################======== 80% ready!"
 
-	if [ $STEP9 = true ]; then
-	    media_codecs
-	fi
+		if [ $STEP9 = true ]; then
+			media_codecs
+		fi
 
-	if [ $STEP10 = true ]; then
-		dsm_configs
-	fi
-    ui_print " "
-    ui_print " - All done! With love, NLSound Team. -"
-    ui_print " "
-else
-    ui_print " "
+		if [ $STEP10 = true ]; then
+			dsm_configs
+		fi
+		ui_print " "
+		ui_print " - All done! With love, NLSound Team. -"
+		ui_print " "
+}
+
+RU_Manual() {
 		ui_print " - Вы выбрали русский язык! -"
 		ui_print " "
 		ui_print " - Настрой меня, пожалуйста >.< -"
 		ui_print " "
-    ui_print " "
-ui_print " - Отключить глубокий буфер. -"
-  ui_print "*************************************************"
-  ui_print "* [1/10]                                        *"
-  ui_print "*                                               *"
-  ui_print "*               Эта опция отключит              *"
-  ui_print "*        глубокий буфер в вашем устройстве.     *"
-  ui_print "*     Если вы ощущаете нехватку низких частот,  *"
-  ui_print "*             и пропустите эту опцию.           *"
-  ui_print "*                                               *"
-  ui_print "*************************************************"
-ui_print "   Отключить глубокий буфер?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-	STEP1=true
-fi
+		ui_print " "
+		ui_print " - Отключить глубокий буфер. -"
+		ui_print "*************************************************"
+		ui_print "* [1/10]                                        *"
+		ui_print "*                                               *"
+		ui_print "*               Эта опция отключит              *"
+		ui_print "*        глубокий буфер в вашем устройстве.     *"
+		ui_print "*     Если вы ощущаете нехватку низких частот,  *"
+		ui_print "*             и пропустите эту опцию.           *"
+		ui_print "*                                               *"
+		ui_print "*************************************************"
+		ui_print "   Отключить глубокий буфер?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+			STEP1=true
+		fi	
 
-ui_print " "
-ui_print " - Новые аудио параметры для внутреннего аудио кодека -"
-ui_print "***************************************************"
-ui_print "* [2/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*            Эта опция сконфигурирует             *"
-ui_print "*           ваш внутренний аудио кодек.           *"
-ui_print "*          [Рекомендуется для установки]          *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Установить новые параметры для внутреннего аудио кодека?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-   STEP2=true
-fi
+		ui_print " "
+		ui_print " - Новые аудио параметры для внутреннего аудио кодека -"
+		ui_print "***************************************************"
+		ui_print "* [2/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*            Эта опция сконфигурирует             *"
+		ui_print "*           ваш внутренний аудио кодек.           *"
+		ui_print "*          [Рекомендуется для установки]          *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Установить новые параметры для внутреннего аудио кодека?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		   STEP2=true
+		fi
 
-ui_print " "
-ui_print " - Audio device патчи -"
-ui_print "***************************************************"
-ui_print "* [3/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*            Эта опция сконфигурирует             *"
-ui_print "*           ваш внутренний аудио кодек.           *"
-ui_print "*          [Рекомендуется для установки]          *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Установить audio device патчи?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-  STEP3=true
-fi
+		ui_print " "
+		ui_print " - Audio device патчи -"
+		ui_print "***************************************************"
+		ui_print "* [3/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*            Эта опция сконфигурирует             *"
+		ui_print "*           ваш внутренний аудио кодек.           *"
+		ui_print "*          [Рекомендуется для установки]          *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Установить audio device патчи?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP3=true
+		fi
 
-ui_print " "
-ui_print " - Новые аудио параметры-"
-  ui_print "*************************************************"
-  ui_print "* [4/10]                                        *"
-  ui_print "*                                               *"
-  ui_print "*   Эта опция применит новые аудио параметры    *"
-  ui_print "*      для вашего внутреннего аудио кодека      *"
-  ui_print "*           Может вызвать проблемы.             *"
-  ui_print "*                                               *"
-  ui_print "*************************************************"
-ui_print "   Установить новые аудио параметры?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-   STEP4=true
-fi
+		ui_print " "
+		ui_print " - Новые аудио параметры-"
+		ui_print "*************************************************"
+		ui_print "* [4/10]                                        *"
+		ui_print "*                                               *"
+		ui_print "*   Эта опция применит новые аудио параметры    *"
+		ui_print "*      для вашего внутреннего аудио кодека      *"
+		ui_print "*           Может вызвать проблемы.             *"
+		ui_print "*                                               *"
+		ui_print "*************************************************"
+		ui_print "   Установить новые аудио параметры?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		   STEP4=true
+		fi
 
-ui_print " "
-ui_print " - Конфигурация MediaTek Bessound -"
-ui_print "***************************************************"
-ui_print "* [5/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*   Эта опция сконфигурирует MediaTek Bessound    *"
-ui_print "*        технологию в вашем устройстве.           *"
-ui_print "*           Может вызвать проблемы.               *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Сконфигурировать?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-   STEP5=true
-fi
+		ui_print " "
+		ui_print " - Конфигурация MediaTek Bessound -"
+		ui_print "***************************************************"
+		ui_print "* [5/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*   Эта опция сконфигурирует MediaTek Bessound    *"
+		ui_print "*        технологию в вашем устройстве.           *"
+		ui_print "*           Может вызвать проблемы.               *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Сконфигурировать?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		   STEP5=true
+		fi
 
-ui_print " "
-ui_print " - Патчинг device_features файлов -"
-  ui_print "*************************************************"
-  ui_print "* [6/10]                                        *"
-  ui_print "*                                               *"
-  ui_print "*        Этот пункт сделает следующее:          *"
-  ui_print "*        - Разблокирует частоту семплирования   *"
-  ui_print "*          аудио вплоть до 384000 кГц;          *"
-  ui_print "*        - Активирует переключатель ААС кодека  *"
-  ui_print "*          в настройках Bluetooth-наушников;    *"
-  ui_print "*        - Активирует поддержку ИИР параметров; *"
-  ui_print "*        - Активирует поддержку стерео записи;  *"
-  ui_print "*        - Активирует поддержку HD записи;      *"
-  ui_print "*        - Активирует поддержку Dolby и Hi-Fi   *"
-  ui_print "*          (на полдерживаемых устройствах);     *"
-  ui_print "*        - Активирует поддержку аудио фокуса    *"
-  ui_print "*          при записи видео;                    *"
-  ui_print "*        - Активирует поддержку быстрого        *"
-  ui_print "*          подключения к Bluetooth наушникам.   *"
-  ui_print "*                                               *"
-  ui_print "*  И многое другое . . .                        *"
-  ui_print "*                                               *"
-  ui_print "*************************************************"
-ui_print "   Установить?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-  STEP6=true
-fi
+		ui_print " "
+		ui_print " - Патчинг device_features файлов -"
+		ui_print "*************************************************"
+		ui_print "* [6/10]                                        *"
+		ui_print "*                                               *"
+		ui_print "*        Этот пункт сделает следующее:          *"
+		ui_print "*        - Разблокирует частоту семплирования   *"
+		ui_print "*          аудио вплоть до 384000 кГц;          *"
+		ui_print "*        - Активирует переключатель ААС кодека  *"
+		ui_print "*          в настройках Bluetooth-наушников;    *"
+		ui_print "*        - Активирует поддержку ИИР параметров; *"
+		ui_print "*        - Активирует поддержку стерео записи;  *"
+		ui_print "*        - Активирует поддержку HD записи;      *"
+		ui_print "*        - Активирует поддержку Dolby и Hi-Fi   *"
+		ui_print "*          (на полдерживаемых устройствах);     *"
+		ui_print "*        - Активирует поддержку аудио фокуса    *"
+		ui_print "*          при записи видео;                    *"
+		ui_print "*        - Активирует поддержку быстрого        *"
+		ui_print "*          подключения к Bluetooth наушникам.   *"
+		ui_print "*                                               *"
+		ui_print "*  И многое другое . . .                        *"
+		ui_print "*                                               *"
+		ui_print "*************************************************"
+		ui_print "   Установить?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP6=true
+		fi
 
-ui_print " "
-ui_print " - Патчинг audio_param опций -"
-  ui_print "*************************************************"
-  ui_print "* [7/10]                                        *"
-  ui_print "*                                               *"
-  ui_print "*   Этот пункт улучшит настройки аудио пар-ов   *"
-  ui_print "*        вашего внутреннего аудио кодека        *"
-  ui_print "*            Может вызвать проблемы.            *"
-  ui_print "*                                               *"
-  ui_print "*************************************************"
-ui_print "   Патчить?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-   STEP7=true
-fi
+		ui_print " "
+		ui_print " - Патчинг audio_param опций -"
+		ui_print "*************************************************"
+		ui_print "* [7/10]                                        *"
+		ui_print "*                                               *"
+		ui_print "*   Этот пункт улучшит настройки аудио пар-ов   *"
+		ui_print "*        вашего внутреннего аудио кодека        *"
+		ui_print "*            Может вызвать проблемы.            *"
+		ui_print "*                                               *"
+		ui_print "*************************************************"
+		ui_print "   Патчить?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		   STEP7=true
+		fi
 
-ui_print " "
-ui_print " - Сконфигурировать DSP HAL -"
-ui_print "***************************************************"
-ui_print "* [8/10]                                          *"
-ui_print "*                                                 *"
-ui_print "*   Эта опция настроит DSP HAL библиотеки         *"
-ui_print "*        в системе вашего устройства.             *"
-ui_print "*          Может вызвать проблемы.                *"
-ui_print "*                                                 *"
-ui_print "***************************************************"
-ui_print "   Конфигурировать?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-  STEP8=true
-fi
+		ui_print " "
+		ui_print " - Сконфигурировать DSP HAL -"
+		ui_print "***************************************************"
+		ui_print "* [8/10]                                          *"
+		ui_print "*                                                 *"
+		ui_print "*   Эта опция настроит DSP HAL библиотеки         *"
+		ui_print "*        в системе вашего устройства.             *"
+		ui_print "*          Может вызвать проблемы.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Конфигурировать?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP8=true
+		fi
 
-ui_print " "
-ui_print " - Патчинг media codecs -"
-  ui_print "*************************************************"
-  ui_print "* [9/10]                                        *"
-  ui_print "*                                               *"
-  ui_print "*    Эта опция настроит медиа кодеки в вашей    *"
-  ui_print "*     системе для повышения качества аудио.     *"
-  ui_print "*         [Рекомендуется для установки]         *"
-  ui_print "*                                               *"
-  ui_print "*************************************************"
-ui_print "   Патчить?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-  STEP9=true
-fi
+		ui_print " "
+		ui_print " - Патчинг media codecs -"
+		ui_print "*************************************************"
+		ui_print "* [9/10]                                        *"
+		ui_print "*                                               *"
+		ui_print "*    Эта опция настроит медиа кодеки в вашей    *"
+		ui_print "*     системе для повышения качества аудио.     *"
+		ui_print "*         [Рекомендуется для установки]         *"
+		ui_print "*                                               *"
+		ui_print "*************************************************"
+		ui_print "   Патчить?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP9=true
+		fi
 
-ui_print " "
-ui_print " - Патчинг DSM конфигов -"
-  ui_print "*************************************************"
-  ui_print "* [10/10]                                       *"
-  ui_print "*                                               *"
-  ui_print "*    Этот пункт пропатчит DSM файлы в вашей     *"
-  ui_print "*     системе для повышения качества аудио      *"
-  ui_print "*         [Рекомендуется для установки]         *"
-  ui_print "*                                               *"
-  ui_print "*************************************************"
-ui_print "   Патчить?"
-sleep 1
-ui_print " "
-ui_print "   Vol Up = ДА, Vol Down = НЕТ"
-if chooseport; then
-  STEP10=true
-fi
+		ui_print " "
+		ui_print " - Патчинг DSM конфигов -"
+		ui_print "*************************************************"
+		ui_print "* [10/10]                                       *"
+		ui_print "*                                               *"
+		ui_print "*    Этот пункт пропатчит DSM файлы в вашей     *"
+		ui_print "*     системе для повышения качества аудио      *"
+		ui_print "*         [Рекомендуется для установки]         *"
+		ui_print "*                                               *"
+		ui_print "*************************************************"
+		ui_print "   Патчить?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP10=true
+		fi
 
-    if [ $STEP1 = true ]; then
+		if [ $STEP1 = true ]; then
+			deep_buffer
+		fi
+
+		if [ $STEP2 = true ]; then
+			audio_codec
+		fi
+
+		ui_print " "
+		ui_print "   ########================================ 20% готово!"
+
+		if [ $STEP3 = true ]; then
+			audio_device
+		fi
+
+		if [ $STEP4 = true ]; then
+			audio_parameters
+		fi
+
+		ui_print " "
+		ui_print "   ################======================== 40% готово!"
+
+		if [ $STEP5 = true ]; then
+			mtk_bessound
+		fi
+
+		if [ $STEP6 = true ]; then
+			if [ -f $DEVFEA ]; then
+			device_features_system
+		  elif [ -f $DEVFEAA ]; then
+			device_features_vendor
+		  fi
+		fi
+
+		ui_print " "
+		ui_print "   ########################================ 60% готово!"
+
+		if [ $STEP7 = true ]; then
+			audio_param
+		fi
+
+		if [ $STEP8 = true ]; then
+			dsp_hal
+		fi
+
+		ui_print " "
+		ui_print "   ################################======== 80% готово!"
+
+		if [ $STEP9 = true ]; then
+			media_codecs
+		fi
+
+		if [ $STEP10 = true ]; then
+			dsm_configs
+		fi
+		ui_print " "
+		ui_print " - Всё готово! С любовью, NLSound Team. -"
+		ui_print " "
+}
+
+All_En() {
+	ui_print " "
+	ui_print " - You selected INSTALL ALL "
+	ui_print " "
+	ui_print " - Installation started! Please, wait..."
+	
+	if [ $ALL = true ]; then
 		deep_buffer
-	fi
-
-	if [ $STEP2 = true ]; then
 		audio_codec
-	fi
-
-    ui_print " "
-    ui_print "   ########================================ 20% готово!"
-
-	if [ $STEP3 = true ]; then
 		audio_device
-	fi
-
-	if [ $STEP4 = true ]; then
-		audio_parameters
-	fi
-
-    ui_print " "
-    ui_print "   ################======================== 40% готово!"
-
-	if [ $STEP5 = true ]; then
-        mtk_bessound
-	fi
-
-	if [ $STEP6 = true ]; then
-		if [ -f $DEVFEA ]; then
-		device_features_system
-      elif [ -f $DEVFEAA ]; then
-        device_features_vendor
-      fi
-	fi
-
-    ui_print " "
-    ui_print "   ########################================ 60% готово!"
-
-	if [ $STEP7 = true ]; then
+		audio_parameters	
+		mtk_bessound
+		
+		if [ -f /$sys_tem/etc/device_features/*.xml ]; then
+			device_features_system
+		else
+			device_features_vendor
+		fi
+		
 		audio_param
-	fi
-
-	if [ $STEP8 = true ]; then
-        dsp_hal
-	fi
-
-    ui_print " "
-    ui_print "   ################################======== 80% готово!"
-
-	if [ $STEP9 = true ]; then
-	    media_codecs
-	fi
-
-	if [ $STEP10 = true ]; then
+		dsp_hal
+		media_codecs
 		dsm_configs
 	fi
-    ui_print " "
-    ui_print " - Всё готово! С любовью, NLSound Team. -"
-    ui_print " "
-  fi
+	ui_print " "
+	ui_print " All done!"
+}
+
+All_Ru() {
+	ui_print " "
+	ui_print " - Вы выбрали УСТАНОВИТЬ ВСЁ "
+	ui_print " "
+	ui_print " - Установка начата! Пожалуйста, подождите..."
+	
+	if [ $ALL = true ]; then
+		deep_buffer
+		audio_codec
+		audio_device
+		audio_parameters	
+		mtk_bessound
+		
+		if [ -f /$sys_tem/etc/device_features/*.xml ]; then
+			device_features_system
+		else
+			device_features_vendor
+		fi
+		
+		audio_param
+		dsp_hal
+		media_codecs
+		dsm_configs
+	fi
+	ui_print " "
+	ui_print " Всё готово!"
+}
+
+ui_print " "
+ui_print " - Select language -"
+ui_print " "
+ui_print " - NOTE: [VOL+] - select, [VOL-] - confirm "
+sleep 1
+LANG=1
+ui_print " "
+ui_print "   1. English "
+ui_print "   2. Русский "
+ui_print " "
+ui_print "      Selected: "
+while true; do
+	ui_print "      $LANG"
+	if $VKSEL; then
+		LANG=$((LANG + 1))
+	else
+		break
+	fi
+		
+	if [ $LANG -gt 2 ]; then
+		LANG=1
+	fi
+done
+
+case $LANG in
+	1) English;;
+	2) Russian;;
+esac
+
