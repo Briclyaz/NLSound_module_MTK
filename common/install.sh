@@ -1,16 +1,24 @@
 nlsound() {
-  case $1 in
-    *.conf) SPACES=$(sed -n "/^output_session_processing {/,/^}/ {/^ *music {/p}" $1 | sed -r "s/( *).*/\1/")
-            EFFECTS=$(sed -n "/^output_session_processing {/,/^}/ {/^$SPACES\music {/,/^$SPACES}/p}" $1 | grep -E "^$SPACES +[A-Za-z]+" | sed -r "s/( *.*) .*/\1/g")
-            for EFFECT in ${EFFECTS}; do
-              SPACES=$(sed -n "/^effects {/,/^}/ {/^ *$EFFECT {/p}" $1 | sed -r "s/( *).*/\1/")
-              [ "$EFFECT" != "atmos" ] && sed -i "/^effects {/,/^}/ {/^$SPACES$EFFECT {/,/^$SPACES}/ s/^/#/g}" $1
-            done;;
-     *.xml) EFFECTS=$(sed -n "/^ *<postprocess>$/,/^ *<\/postprocess>$/ {/^ *<stream type=\"music\">$/,/^ *<\/stream>$/ {/<stream type=\"music\">/d; /<\/stream>/d; s/<apply effect=\"//g; s/\"\/>//g; p}}" $1)
-            for EFFECT in ${EFFECTS}; do
-              [ "$EFFECT" != "atmos" ] && sed -ri "s/^( *)<apply effect=\"$EFFECT\"\/>/\1<\!--<apply effect=\"$EFFECT\"\/>-->/" $1
-            done;;
-  esac
+case $1 in
+	-pre) CONF=pre_processing; XML=preprocess;;
+	-post) CONF=output_session_processing; XML=postprocess;;
+esac
+case $2 in
+	*.conf) if [ ! "$(sed -n "/^$CONF {/,/^}/p" $2)" ]; then
+		echo -e "\n$CONF {\n    $3 {\n        $4 {\n        }\n    }\n}" >> $2
+	elif [ ! "$(sed -n "/^$CONF {/,/^}/ {/$3 {/,/^    }/p}" $2)" ]; then
+		sed -i "/^$CONF {/,/^}/ s/$CONF {/$CONF {\n    $3 {\n        $4 {\n        }\n    }/" $2
+	elif [ ! "$(sed -n "/^$CONF {/,/^}/ {/$3 {/,/^    }/ {/$4 {/,/}/p}}" $2)" ]; then
+		sed -i "/^$CONF {/,/^}/ {/$3 {/,/^    }/ s/$3 {/$3 {\n        $4 {\n        }/}" $2
+	fi;;
+	*.xml) if [ ! "$(sed -n "/^ *<$XML>/,/^ *<\/$XML>/p" $2)" ]; then     
+		sed -i "/<\/audio_effects_conf>/i\    <$XML>\n       <stream type=\"$3\">\n            <apply effect=\"$4\"\/>\n        <\/stream>\n    <\/$XML>" $2
+	elif [ ! "$(sed -n "/^ *<$XML>/,/^ *<\/$XML>/ {/<stream type=\"$3\">/,/<\/stream>/p}" $2)" ]; then     
+		sed -i "/^ *<$XML>/,/^ *<\/$XML>/ s/    <$XML>/    <$XML>\n        <stream type=\"$3\">\n            <apply effect=\"$4\"\/>\n        <\/stream>/" $2
+	elif [ ! "$(sed -n "/^ *<$XML>/,/^ *<\/$XML>/ {/<stream type=\"$3\">/,/<\/stream>/ {/^ *<apply effect=\"$4\"\/>/p}}" $2)" ]; then
+		sed -i "/^ *<$XML>/,/^ *<\/$XML>/ {/<stream type=\"$3\">/,/<\/stream>/ s/<stream type=\"$3\">/<stream type=\"$3\">\n            <apply effect=\"$4\"\/>/}" $2
+	fi;;
+esac
 }
 
 patch_xml() {
@@ -79,6 +87,57 @@ patch_xml() {
   esac
 }
 
+#author - Lord_Of_The_Lost@Telegram
+meme_effects() {
+case $1 in
+	*.conf) local SPACES=$(sed -n "/^output_session_processing {/,/^}/ {/^ *music {/p}" $1 | sed -r "s/( *).*/\1/")
+		local EFFECTS=$(sed -n "/^output_session_processing {/,/^}/ {/^$SPACES\music {/,/^$SPACES}/p}" $1 | grep -E "^$SPACES +[A-Za-z]+" | sed -r "s/( *.*) .*/\1/g")
+		for EFFECT in $EFFECTS; do
+		local SPACES=$(sed -n "/^effects {/,/^}/ {/^ *$EFFECT {/p}" $1 | sed -r "s/( *).*/\1/")
+		[ "$EFFECT" != "atmos" ] && sed -i "/^effects {/,/^}/ {/^$SPACES$EFFECT {/,/^$SPACES}/ s/^/#/g}" $1
+	done;;
+	*.xml) local EFFECTS=$(sed -n "/^ *<postprocess>$/,/^ *<\/postprocess>$/ {/^ *<stream type=\"music\">$/,/^ *<\/stream>$/ {/<stream type=\"music\">/d; /<\/stream>/d; s/<apply effect=\"//g; s/\"\/>//g; p}}" $1)
+		for EFFECT in $EFFECTS; do
+		[ "$EFFECT" != "atmos" ] && sed -ri "s/^( *)<apply effect=\"$EFFECT\"\/>/\1<\!--<apply effect=\"$EFFECT\"\/>-->/" $1
+	done;;
+esac
+}
+
+#author - Lord_Of_The_Lost@Telegram
+memes_confxml() {
+case $FILE in
+	*.conf) sed -i "/$1 {/,/}/d" $FILE
+		sed -i "/$2 {/,/}/d" $FILE
+		sed -i "s/^effects {/effects {\n  $1 {\n    library $2\n    uuid $5\n  }/g" $FILE
+		sed -i "s/^libraries {/libraries {\n  $2 {\n    path $3\/$4\n  }/g" $FILE;;
+	*.xml) sed -i "/$1/d" $FILE
+		sed -i "/$2/d" $FILE
+		sed -i "/<libraries>/ a\        <library name=\"$2\" path=\"$4\"\/>" $FILE
+	sed -i "/<effects>/ a\        <effect name=\"$1\" library=\"$2\" uuid=\"$5\"\/>" $FILE;;
+esac
+}
+
+#author - Lord_Of_The_Lost@Telegram
+SET_PERM_RM() {
+	SET_PERM_R $MODPATH/$MODID 0 0 0755 0644; [ -d $MODPATH$MIPSB ] && chmod -R 777 $MODPATH$MIPSB; [ -d $MODPATH$MIPSXB ] && chmod -R 777 $MODPATH$MIPSXB; case $1 in -msgdi) UIP "$MSGDI";; esac
+}
+
+#author - Lord_Of_The_Lost@Telegram
+MOVERPATH() {
+if [ $BOOTMODE != true ] && [ -d $MODPATH/$MODID/system_root/system ]; then
+		mkdir -p $MODPATH/$MODID/system; cp -rf $MODPATH/$MODID/system_root/system/* $MODPATH/$MODID/system; rm -rf $MODPATH/$MODID/system_root
+	fi
+if [ -d $MODPATH/$MODID/vendor ]; then
+		mkdir -p $MODPATH$MIPSV; cp -rf $MODPATH/$MODID/vendor/* $MODPATH$MIPSV; rm -rf $MODPATH/$MODID/vendor
+	fi
+if [ $BOOTMODE != true ] && [ -d $MODPATH/$MODID/system/system ]; then
+		mkdir -p $MODPATH/$MODID/system; cp -rf $MODPATH/$MODID/system/system/* $MODPATH/$MODID/system; rm -rf $MODPATH/$MODID/system/system
+	fi
+if [ $BOOTMODE != true ] && [ -d $MODPATH/$MODID/system_root/system/system_ext ]; then
+		mkdir -p $MODPATH/$MODID/system/system_ext; cp -rf $MODPATH/$MODID/system_root/system/system_ext/* $MODPATH/$MODID/system/system_ext; rm -rf $MODPATH/$MODID/system_root
+	fi
+}
+
 [ -f /system/vendor/build.prop ] && BUILDS="/system/build.prop /system/vendor/build.prop" || BUILDS="/system/build.prop"
 MTKG90T=$(grep "ro.board.platform=mt6785" $BUILDS)
 HELIOG85=$(grep "ro.board.platform=mt6768" $BUILDS)
@@ -89,7 +148,6 @@ R10X4GNOTE9=$(grep -E "ro.product.vendor.device=merlin.*" $BUILDS)
 R10XPRO5G=$(grep -E "ro.product.vendor.device=bomb.*" $BUILDS)
 R10X5G=$(grep -E "ro.product.vendor.device=atom.*" $BUILDS)
 
-NLS=$MODPATH/common/NLSound
 FEATURES=$MODPATH/common/NLSound/features
 AUPAR=$MODPATH/common/NLSound/audio_param
 CODECS=$MODPATH/common/NLSound/codecs
@@ -108,10 +166,6 @@ AUEMS="$(find /system /vendor -type f -name "*audio_em.xml")"
 AURCONFS="$(find /system /vendor -type f -name "*aurisys_config.xml")"
 AURCONFHIFIS="$(find /system /vendor -type f -name "*aurisys_config.xml")"
 
-mkdir -p $MODPATH/tools
-cp -f $MODPATH/common/addon/External-Tools/tools/$ARCH32/* $MODPATH/tools/
-chmod -R 0755 $MODPATH/tools
-
 STEP1=false
 STEP2=false
 STEP3=false
@@ -123,58 +177,23 @@ STEP8=false
 STEP9=false
 STEP10=false
 STEP11=false
+STEP12=false
+STEP13=false
+STEP14=false
+STEP15=false
 
 ALL=false
 
-for OAPO in ${APOS}; do
-    APO="$MODPATH$(echo $OAPO | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch $ORIGDIR$OAPO $APO
-    sed -i 's/\t/  /g' $APO
-done
-
-for OADEV in ${ADEVS}; do
-    ADEV="$MODPATH$(echo $OADEV | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch $ORIGDIR$OADEV $ADEV
-    sed -i 's/\t/  /g' $ADEV
-done
-
-for OAUEM in ${AUEMS}; do
-    AUEM="$MODPATH$(echo $OAUEM | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch $ORIGDIR$OAUEM $AUEM
-    sed -i 's/\t/  /g' $AUEM
-done
-
-for OAURCONF in ${AURCONFS}; do
-    AURCONF="$MODPATH$(echo $OAURCONF | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch $ORIGDIR$OAURCONF $AURCONF
-    sed -i 's/\t/  /g' $AURCONF
-done
-
-for ODEVFEA in ${DEVFEA}; do 
-		DEVFEA="$MODPATH$(echo $ODEVFEA | sed "s|^/vendor|/system/vendor|g")"
-		cp_ch $ORIGDIR$ODEVFEA $DEVFEA
-		sed -i 's/\t/  /g' $DEVFEA
-done
-
-for ODEVFEAA in ${DEVFEAA}; do 
-		DEVFEAA="$MODPATH$(echo $ODEVFEAA | sed "s|^/vendor|/system/vendor|g")"
-		cp_ch $ORIGDIR$ODEVFEAA $DEVFEAA
-		sed -i 's/\t/  /g' $DEVFEAA
-done
-
-for OAURCONFHIFI in ${AURCONFHIFIS}; do
-    AURCONFHIFI="$MODPATH$(echo $OAURCONFHIFI | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch $ORIGDIR$OAURCONFHIFI $AURCONFHIFI
-    sed -i 's/\t/  /g' $AURCONFHIFI
-done
-
 deep_buffer() {
-  echo -e '\naudio.deep_buffer.media=false\nvendor.audio.deep_buffer.media=false\nqc.audio.deep_buffer.media=false\nro.qc.audio.deep_buffer.media=false\npersist.vendor.audio.deep_buffer.media=false' >> $MODPATH/system.prop
+	echo -e '\naudio.deep_buffer.media=false\nvendor.audio.deep_buffer.media=false\nqc.audio.deep_buffer.media=false\nro.qc.audio.deep_buffer.media=false\npersist.vendor.audio.deep_buffer.media=false' >> $MODPATH/system.prop
 }
 
 audio_codec() {
- for OAPO in ${APOS}; do
+	for OAPO in $APOS; do
     APO="$MODPATH$(echo $OAPO | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $APO`
+	cp -f $MAGISKMIRROR$OAPO $APO
+	sed -i 's/\t/  /g' $APO
 	if [ "$RN8PRO" ]; then
 		patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOIP_ENHANCEMENT_SUPPORT"]' "yes"
 		patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_ASR_SUPPORT"]' "yes"
@@ -247,8 +266,11 @@ audio_codec() {
 }
 
 audio_device() {
- for OADEV in ${ADEVS}; do
+ for OADEV in $ADEVS; do
     ADEV="$MODPATH$(echo $OADEV | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $ADEV`
+	cp -f $MAGISKMIRROR$OADEV $ADEV
+	sed -i 's/\t/  /g' $ADEV
 	if [ "$RN8PRO" ]; then
 		patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Speaker_class_Switch"]' "CLASSH"
 		patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Debug_Setting"]' "1"
@@ -281,8 +303,11 @@ audio_device() {
 }
 
 audio_parameters() {
- for OAUEM in ${AUEMS}; do
+ for OAUEM in $AUEMS; do
     AUEM="$MODPATH$(echo $OAUEM | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $AUEM`
+	cp -f $MAGISKMIRROR$OAUEM $AUEM
+	sed -i 's/\t/  /g' $AUEM
 	if [ "$RN8PRO" ]; then
 		patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="TDM_Record"]' "0"
 		patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SET_MODE"]' "0"
@@ -367,8 +392,11 @@ audio_parameters() {
 }
 
 mtk_bessound() {
- for OAURCONF in ${AURCONFS}; do
+ for OAURCONF in $AURCONFS; do
     AURCONF="$MODPATH$(echo $OAURCONF | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $AURCONF`
+	cp -f $MAGISKMIRROR$OAURCONF $AURCONF
+	sed -i 's/\t/  /g' $AURCONF
 	if [ "$RN8PRO" ]; then
 		patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
 		patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
@@ -405,8 +433,11 @@ mtk_bessound() {
 }
 
 device_features_system() {
-	for ODEVFEA in ${DEVFEA}; do 
-		DEVFEA="$MODPATH$(echo $ODEVFEA | sed "s|^/vendor|/system/vendor|g")"
+	for ODEVFEA in $DEVFEA; do 
+	DEVFEA="$MODPATH$(echo $ODEVFEA | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $DEVFEA`
+	cp -f $MAGISKMIRROR$ODEVFEA $DEVFEA
+	sed -i 's/\t/  /g' $DEVFEA
 		patch_xml -s $DEVFEA '/features/bool[@name="support_a2dp_latency"]' "true"
 		patch_xml -s $DEVFEA '/features/bool[@name="support_samplerate_48000"]' "true"
 		patch_xml -s $DEVFEA '/features/bool[@name="support_samplerate_96000"]' "true"
@@ -422,8 +453,11 @@ device_features_system() {
 }
 
 device_features_vendor() {
-	for ODEVFEAA in ${DEVFEAA}; do 
-		DEVFEAA="$MODPATH$(echo $ODEVFEAA | sed "s|^/vendor|/system/vendor|g")"
+	for ODEVFEAA in $DEVFEAA; do
+	DEVFEAA="$MODPATH$(echo $ODEVFEAA | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $DEVFEAA`
+	cp -f $MAGISKMIRROR$ODEVFEAA $DEVFEAA
+	sed -i 's/\t/  /g' $DEVFEAA
 		patch_xml -s $DEVFEAA '/features/bool[@name="support_a2dp_latency"]' "true"
 		patch_xml -s $DEVFEAA '/features/bool[@name="support_samplerate_48000"]' "true"
 		patch_xml -s $DEVFEAA '/features/bool[@name="support_samplerate_96000"]' "true"
@@ -439,12 +473,15 @@ device_features_vendor() {
 }
 
 audio_param() {
-  cp_ch -f $AUPAR $MODPATH/system/etc/
+  cp -f $MAGISKMIRROR$AUPAR $MODPATH/system/etc/
 }
 
 dsp_hal() {
-  for OAURCONFHIFI in ${AURCONFHIFIS}; do
-    AURCONFHIFI="$MODPATH$(echo $OAURCONFHIFI | sed "s|^/vendor|/system/vendor|g")"
+	for OAURCONFHIFI in $AURCONFHIFIS; do
+	AURCONFHIFI="$MODPATH$(echo $OAURCONFHIFI | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $AURCONFHIFI`
+	cp -f $MAGISKMIRROR$OAURCONFHIFI $AURCONFHIFI
+	sed -i 's/\t/  /g' $AURCONFHIFI
 	if [ "$RN8PRO" ]; then
 		patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
 		patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
@@ -489,61 +526,239 @@ dsp_hal() {
 }
 
 media_codecs() {
-   cp_ch -f $CODECS/media_codecs_mediatek_audio.xml $MODPATH/system/vendor/etc/media_codecs_mediatek_audio.xml
-   cp_ch -f $CODECS/media_codecs_mediatek_audio.xml $MODPATH/vendor/etc/media_codecs_mediatek_audio.xml
+	cp -f $MAGISKMIRROR$CODECS/media_codecs_mediatek_audio.xml $MODPATH/system/vendor/etc/media_codecs_mediatek_audio.xml
+	cp -f $MAGISKMIRROR$CODECS/media_codecs_mediatek_audio.xml $MODPATH/vendor/etc/media_codecs_mediatek_audio.xml
 }
 
 dsm_configs() {
- cp_ch -f $DSM/DSM_config.xml $MODPATH/system/vendor/etc/DSM_config.xml
- cp_ch -f $DSM/DSM.xml $MODPATH/system/vendor/etc/DSM.xml
- cp_ch -f $DSM/DSM_config.xml $MODPATHvendor/etc/DSM_config.xml
- cp_ch -f $DSM/DSM.xml $MODPATH/vendor/etc/DSM.xml
+	cp -f $MAGISKMIRROR$DSM/DSM_config.xml $MODPATH/system/vendor/etc/DSM_config.xml
+	cp -f $MAGISKMIRROR$DSM/DSM.xml $MODPATH/system/vendor/etc/DSM.xml
+	cp -f $MAGISKMIRROR$DSM/DSM_config.xml $MODPATH/vendor/etc/DSM_config.xml
+	cp -f $MAGISKMIRROR$DSM/DSM.xml $MODPATH/vendor/etc/DSM.xml
 }
 
 dirac() {
-	for OFILE in ${CFGS}; do
-	  FILE="$MODPATH$(echo $OFILE | sed "s|^/vendor|/system/vendor|g")"
-	  cp_ch -n $ORIGDIR$OFILE $FILE
-	  nlsound $FILE
-	  case $FILE in
-		*.conf) sed -i "/dirac_gef {/,/}/d" $FILE
-				sed -i "s/^libraries {/libraries {\n  dirac_gef { #$MODID\n    path $LIBPATCH\/lib\/soundfx\/libdiraceffect.so\n  } #$MODID/g" $FILE
-				sed -i "s/^effects {/effects {\n  dirac_gef { #$MODID\n    library dirac_gef\n    uuid 3799D6D1-22C5-43C3-B3EC-D664CF8D2F0D\n  } #$MODID/g" $FILE
-				processing_patch "post" "$FILE" "music" "dirac_gef";;
-		*.xml) sed -i "/dirac_gef/d" $FILE
-			  sed -i "/<libraries>/ a\        <library name=\"dirac_gef\" path=\"libdiraceffect.so\"\/><!--$MODID-->" $FILE
-			  sed -i "/<effects>/ a\        <effect name=\"dirac_gef\" library=\"dirac_gef\" uuid=\"3799D6D1-22C5-43C3-B3EC-D664CF8D2F0D\"\/><!--$MODID-->" $FILE
-			  processing_patch "post" "$FILE" "music" "dirac_gef";;
-			  
-	  esac
-	  
-		cp_ch -f $NEWDIRAC/diracvdd.bin $MODPATH/system/vendor/etc/diracvdd.bin
-		cp_ch -f $NEWDIRAC/dirac_resource.dar $MODPATH/system/vendor/lib/rfsa/adsp/dirac_resource.dar
-		cp_ch -f $NEWDIRAC/dirac_resource.dar $MODPATH/system/vendor/lib/rfsa/adsp/dirac.so
-		cp_ch -f $NEWDIRAC/interfacedb $MODPATH/system/vendor/etc/dirac/interfacedb
-		cp_ch -f $NEWDIRAC/libdirac-capiv2.so $MODPATH/system/vendor/lib/rfsa/adsp/libdirac-capiv2.so
-		cp_ch -f $NEWDIRAC/libdiraceffect.so $MODPATH/system/vendor/lib/soundfx/libdiraceffect.so
-		
-		echo -e "\n# Dirac Parameters
-			persist.dirac.acs.controller=gef
-			persist.dirac.gef.oppo.syss=true
-			persist.dirac.config=64
-			persist.dirac.gef.exs.did=29,49
-			persist.dirac.gef.ext.did=10,20,29,49
-			persist.dirac.gef.ins.did=19,134,150
-			persist.dirac.gef.int.did=15,19,134,150
-			persist.dirac.gef.ext.appt=0x00011130,0x00011134,0x00011136
-			persist.dirac.gef.exs.appt=0x00011130,0x00011131
-			persist.dirac.gef.int.appt=0x00011130,0x00011134,0x00011136
-			persist.dirac.gef.ins.appt=0x00011130,0x00011131
-			persist.dirac.gef.exs.mid=268512739
-			persist.dirac.gef.ext.mid=268512737
-			persist.dirac.gef.ins.mid=268512738
-			persist.dirac.gef.int.mid=268512736
-			persist.dirac.path=/vendor/etc/dirac
-			ro.dirac.acs.storeSettings=1
-			persist.dirac.acs.ignore_error=1" >> $MODPATH/$MODID/system.prop
-		done
+	for OFILE in $CFGS; do
+	FILE="$MODPATH$(echo $OFILE | sed "s|^/vendor|/system/vendor|g")"
+	mkdir -p `dirname $FILE`
+	cp -f $MAGISKMIRROR$OFILE $FILE
+		meme_effects $FILE
+		memes_confxml "dirac_gef" "$MODID" "\/system\/lib\/soundfx" "libdiraceffect.so" "3799d6d1-22c5-43c3-b3ec-d664cf8d2f0d"
+		nlsound -post "$FILE" "music" "dirac_gef"
+	done
+	mkdir -p $MODPATH/system/vendor/etc/dirac $MODPATH/system/vendor/lib/rfsa/adsp $MODPATH/system/vendor/lib/soundfx
+	cp -f $NEWDIRAC/diracvdd.bin $MODPATH/system/vendor/etc/
+	cp -f $NEWDIRAC/interfacedb $MODPATH/system/vendor/etc/dirac
+	cp -f $NEWDIRAC/dirac_resource.dar $MODPATH/system/vendor/lib/rfsa/adsp
+	cp -f $NEWDIRAC/dirac.so $MODPATH/system/vendor/lib/rfsa/adsp
+	cp -f $NEWDIRAC/libdirac-capiv2.so $MODPATH/system/vendor/lib/rfsa/adsp
+	cp -f $NEWDIRAC/libdiraceffect.so $MODPATH/system/vendor/lib/soundfx
+echo -e "\n# Patch Dirac
+persist.dirac.acs.controller=gef
+persist.dirac.gef.oppo.syss=true
+persist.dirac.config=64
+persist.dirac.gef.exs.did=29,49
+persist.dirac.gef.ext.did=10,20,29,49
+persist.dirac.gef.ins.did=19,134,150
+persist.dirac.gef.int.did=15,19,134,150
+persist.dirac.gef.ext.appt=0x00011130,0x00011134,0x00011136
+persist.dirac.gef.exs.appt=0x00011130,0x00011131
+persist.dirac.gef.int.appt=0x00011130,0x00011134,0x00011136
+persist.dirac.gef.ins.appt=0x00011130,0x00011131
+persist.dirac.gef.exs.mid=268512739
+persist.dirac.gef.ext.mid=268512737
+persist.dirac.gef.ins.mid=268512738
+persist.dirac.gef.int.mid=268512736
+persist.dirac.path=/vendor/etc/dirac
+ro.dirac.acs.storeSettings=1
+persist.dirac.acs.ignore_error=1" >> $MODPATH/system.prop
+}
+
+prop() {
+echo -e "\n#"
+echo -e "\n#PROP TWEAKS BY NLSOUND TEAM"
+echo -e "\n#
+# Spv_avs
+
+persist.vendor.audio.spv4.enable=true
+persist.vendor.audio.avs.afe_api_version=9
+
+# Media_codecs
+
+ro.mediacodec.min_sample_rate=7350
+ro.mediacodec.max_sample_rate=2822400
+vendor.audio.flac.sw.decoder.24bit=true
+vendor.audio.aac.sw.decoder.24bit=true
+vendor.audio.use.sw.alac.decoder=true
+vendor.audio.flac.sw.encoder.24bit=true
+vendor.audio.aac.sw.encoder.24bit=true
+vendor.audio.use.sw.ape.decoder=true
+vendor.audio.vorbis.complexity.default=8
+vendor.audio.vorbis.quality=100
+vendor.audio.aac.complexity.default=8
+vendor.audio.aac.quality=100
+media.stagefright.enable-player=true
+media.stagefright.enable-http=true
+media.stagefright.enable-aac=true
+media.stagefright.enable-qcp=true
+media.stagefright.enable-fma2dp=true
+media.stagefright.enable-scan=true
+media.stagefright.audio.sink=128
+vendor.audio.tunnel.encode=true
+tunnel.audio.encode=true
+qc.tunnel.audio.encode=true
+audio.decoder_override_check=true
+use.non-omx.mp3.decoder=false
+use.non-omx.aac.decoder=false
+mpq.audio.decode=true
+audio.nat.codec.enabled=1
+media.aac_51_output_enabled=true
+
+# LPA
+
+lpa.decode=false
+lpa.use-stagefright=false
+lpa.releaselock=false
+lpa30.decode=false
+
+# Offload
+
+vendor.av.offload.enable=true
+av.offload.enable=true
+qc.av.offload.enable=true
+audio.offload.buffer.size.kb=32
+
+# AF
+
+af.thread.throttle=0
+af.fast.track.multiplier=2
+ro.af.client_heap_size_kbyte=7168
+
+# Features
+
+vendor.audio.feature.external_dsp.enable=true
+vendor.audio.feature.external_speaker.enable=true
+vendor.audio.feature.external_speaker_tfa.enable=true
+vendor.audio.feature.ext_hw_plugin=true
+vendor.audio.feature.ras.enable=true
+vendor.audio.feature.src_trkn.enable=true
+vendor.audio.feature.kpi_optimize.enable=true
+vendor.audio.feature.power_mode.enable=true 
+vendor.audio.feature.compress_meta_data.enable=false
+vendor.audio.feature.compr_cap.enable=false
+vendor.audio.feature.compress_in.enable=false
+vendor.audio.feature.dynamic_ecns.enable=true
+vendor.audio.feature.concurrent_capture.enable=true
+vendor.audio.feature.devicestate_listener.enable=false
+vendor.audio.feature.thermal_listener.enable=false
+
+# Effects
+
+persist.vendor.audio.ambisonic.auto.profile=true
+effect.reverb.pcm=1
+vendor.audio.safx.pbe.enabled=true
+ro.vendor.audio.sfx.speaker=false
+ro.vendor.audio.sfx.earadj=false
+ro.vendor.audio.sfx.scenario=false
+ro.vendor.audio.surround.support=true
+ro.vendor.audio.scenario.support=true
+
+# Hi-Fi
+
+ro.audio.hifi=true
+persist.audio.hifi=true
+persist.audio.hifi.volume=72
+persist.vendor.audio.hifi=true
+persist.audio.hifi.int_codec=true
+vendor.audio.feature.hifi_audio.enable=true
+ro.vendor.audio.hifi=true
+persist.vendor.audio.hifi.int_codec=true
+ro.hardware.hifi.support=true
+
+# Audio_hal
+
+vendor.audio_hal.in_period_size=144
+vendor.audio_hal.period_multiplier=3 
+vendor.audio.hal.output.suspend.supported=true
+
+# Playback
+
+vendor.audio.playback.dsp.pathdelay=0
+audio.playback.mch.downsample=false
+vendor.audio.playback.mch.downsample=false
+persist.vendor.audio.playback.mch.downsample=false
+
+# MM
+
+persist.mm.enable.prefetch=true
+mm.enable.smoothstreaming=true
+vendor.audio.parser.ip.buffer.size=262144
+vendor.mm.enable.qcom_parser=63963135
+persist.mm.enable.prefetch=true
+
+# Recording
+
+ro.vendor.audio.sdk.ssr=false
+ro.ril.enable.amr.wideband=1
+persist.audio.lowlatency.rec=true
+ro.vendor.audio.recording.hd=true
+
+# Other_shit
+vendor.audio.matrix.limiter.enable=0
+vendor.audio.enable.mirrorlink=false
+vendor.audio.feature.afe_proxy.enable=true
+persist.vendor.audio.ha_proxy.enabled=true
+vendor.audio.volume.headset.gain.depcal=true
+vendor.audio.tfa9874.dsp.enabled=true
+persist.vendor.audio_hal.dsp_bit_width_enforce_mode=24
+persist.vendor.audio.format.24bit=true
+vendor.audio.snd_card.open.retries=50
+persist.vendor.audio.hw.binder.size_kbyte=1024
+persist.vendor.audio.bcl.enabled=false
+vendor.audio.capture.enforce_legacy_copp_sr=true
+vendor.power.pasr.enabled=true
+ro.vendor.audio.multiroute=true
+vendor.audio.spkr_prot.tx.sampling_rate=48000
+ext.spkr.enabled=true" >> $MODPATH/system.prop
+}
+
+improve_bluetooth() {
+echo -e "\n# Bluetooth
+
+persist.service.btui.use_aptx=1
+persist.bt.enableAptXHD=true
+persist.bt.a2dp.aptx_disable=false
+persist.bt.a2dp.aptx_hd_disable=false
+persist.vendor.btstack.enable.splita2dp=true 
+persist.vendor.btstack.enable.twsplus=true
+persist.vendor.btstack.connect.peer_earbud=true
+persist.vendor.btstack.enable.twsplussho=true
+persist.vendor.btstack.enable.swb=true
+persist.vendor.btstack.enable.swbpm=true
+persist.vendor.btstack.avrcp.pos_time=1000
+persist.vendor.qcom.bluetooth.aac_frm_ctl.enabled=true 
+persist.vendor.qcom.bluetooth.enable.splita2dp=true 
+persist.vendor.qcom.bluetooth.twsp_state.enabled=false
+persist.vendor.qcom.bluetooth.scram.enabled=false
+persist.vendor.qcom.bluetooth.aac_vbr_ctl.enabled=true
+persist.vendor.qcom.bluetooth.aptxadaptiver2_1_support=true
+persist.vendor.qcom.bluetooth.enable.swb=true
+persist.bt.a2dp.aac_disable=false
+audio.effect.a2dp.enable=1
+vendor.audio.effect.a2dp.enable=1
+persist.vendor.bt.a2dp.aac_whitelist=false
+persist.vendor.bt.a2dp.addr_check_enabled_for_aac=true
+persist.vendor.bt.soc.scram_freqs=192
+persist.vendor.bt.aac_frm_ctl.enabled=true
+persist.vendor.bt.aac_vbr_frm_ctl.enabled=true
+vendor.bt.pts.pbap=true
+ro.bluetooth.emb_wp_mode=false
+ro.bluetooth.wipower=false 
+ro.vendor.bluetooth.wipower=false
+persist.bluetooth.enabledelayreports=true
+persist.sys.fflag.override.settings_bluetooth_hearing_aid=true
+persist.bt.sbc_hd_enabled=1
+persist.bluetooth.sbc_hd_higher_bitrate=1" >> $MODPATH/system.prop
 }
 
 AUTO_EN() {
@@ -953,7 +1168,7 @@ ENG_Manual() {
 		ui_print " "
 		ui_print " - Add new Dirac -"
 		ui_print "***************************************************"
-		ui_print "* [10/10]                                         *"
+		ui_print "* [11/13]                                         *"
 		ui_print "*                                                 *"
 		ui_print "*    This step added new Dirac in your system     *"
 		ui_print "*             May cause problems.                 *"
@@ -966,6 +1181,48 @@ ENG_Manual() {
 		if chooseport; then
 			STEP11=true
 		fi
+		
+		ui_print " "
+		ui_print " - Install tweaks in prop file - "
+		ui_print "***************************************************"
+		ui_print "* [12/13]                                         *"
+		ui_print "*                                                 *"
+		ui_print "*    This option will change the sound quality    *"
+		ui_print "*                  the most.                      *"
+		ui_print "*             May cause problems.                 *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Install?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+		  STEP12=true
+		fi
+		
+		ui_print " "
+		ui_print " - Improve Bluetooth - "
+		ui_print "***************************************************"
+		ui_print "* [13/13]                                         *"
+		ui_print "*                                                 *"
+		ui_print "*   This option will improve the audio quality    *"
+		ui_print "*    in Bluetooth, as well as fix the problem     *"
+		ui_print "*      of disappearing the AAC codec switch       *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Install?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = YES, Vol Down = NO"
+		if chooseport; then
+		  STEP13=true
+		fi
+		
+		ui_print " "
+		ui_print " - Processing. . . . -"
+		ui_print " "
+		ui_print " - You can minimize Magisk and use the device -"
+		ui_print " - and then come back here to reboot and apply the changes. -"
 
 		if [ $STEP1 = true ]; then
 			deep_buffer
@@ -1026,8 +1283,23 @@ ENG_Manual() {
 		if [ $STEP11 = true ]; then
 			dirac
 		fi
+		
+		if [ $STEP12 = true ]; then
+			prop
+		fi
+	
+		if [ $STEP13 = true ]; then
+			improve_bluetooth
+		fi
+		
+		SET_PERM_RM
+		MOVERPATH
+		
 		ui_print " "
-		ui_print " - All done! With love, NLSound Team. -"
+		ui_print "   ######################################## 100% done!"
+		
+		ui_print " "
+		ui_print " - All done! With love, NLSound Team. - "
 		ui_print " "
 }
 
@@ -1246,6 +1518,48 @@ RU_Manual() {
 		if chooseport; then
 			STEP11=true
 		fi
+		
+		ui_print " "
+		ui_print " - Установить твики в prop файл - "
+		ui_print "***************************************************"
+		ui_print "* [11/13]                                         *"
+		ui_print "*                                                 *"
+		ui_print "*  Эта опция сильнее всех изменит качество звука  *"
+		ui_print "*          Может вызвать проблемы.                *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Установить?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP12=true
+		fi
+		
+		ui_print " "
+		ui_print " - Улучшить Bluetooth - "
+		ui_print "***************************************************"
+		ui_print "* [13/13]                                         *"
+		ui_print "*                                                 *"
+		ui_print "*        Эта опция улучшит качество аудио         *"
+		ui_print "*     в Bluetooth, а также исправит проблему с    *"
+		ui_print "*      исчезновением переключателя ААС кодека.    *"
+		ui_print "*            Может вызвать проблемы.              *"
+		ui_print "*                                                 *"
+		ui_print "***************************************************"
+		ui_print "   Установить?"
+		sleep 1
+		ui_print " "
+		ui_print "   Vol Up = ДА, Vol Down = НЕТ"
+		if chooseport; then
+		  STEP13=true
+		fi
+		
+		ui_print " "
+		ui_print " - Обработка. . . . -"
+		ui_print " "
+		ui_print " - Вы можете свернуть Magisk и пользоваться устройством -"
+		ui_print " - а затем вернуться сюда для перезагрузки и применения изменений. -"
 
 		if [ $STEP1 = true ]; then
 			deep_buffer
@@ -1306,6 +1620,18 @@ RU_Manual() {
 		if [ $STEP11 = true ]; then
 			dirac
 		fi
+		
+		if [ $STEP12 = true ]; then
+			prop
+		fi
+	
+		if [ $STEP13 = true ]; then
+			improve_bluetooth
+		fi
+		
+		SET_PERM_RM
+		MOVERPATH
+		
 		ui_print " "
 		ui_print " - Всё готово! С любовью, NLSound Team. -"
 		ui_print " "
@@ -1334,7 +1660,13 @@ All_En() {
 		dsp_hal
 		media_codecs
 		dsm_configs
+		prop
+		improve_bluetooth
 	fi
+	
+	SET_PERM_RM
+	MOVERPATH
+	
 	ui_print " "
 	ui_print " All done!"
 }
@@ -1362,7 +1694,13 @@ All_Ru() {
 		dsp_hal
 		media_codecs
 		dsm_configs
+		prop
+		improve_bluetooth
 	fi
+	
+	SET_PERM_RM
+	MOVERPATH
+	
 	ui_print " "
 	ui_print " Всё готово!"
 }
