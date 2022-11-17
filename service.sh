@@ -1,15 +1,22 @@
 #!/system/bin/sh
-#author: akirasuper@github
-MOUNT=/data
-MODDIR=${0%/*}
-# Check if file exist
-FILE1=$(find /sys/module -name high_perf_mode)
-FILE2=$(find /sys/module -name cpe_debug_mode)
-FILE3=$(find /sys/module -name impedance_detect_en)
-# High Perf Mode
-echo 1 > $FILE1
-# CPE Debug Mode
-echo 1 > $FILE2
-# Impedance Detect EN
-echo 1 > $FILE3
+
+# restart
+if [ "$API" -ge 24 ]; then
+  killall audioserver
+else
+  killall mediaserver
 fi
+
+#!/system/bin/sh
+MODDIR=${0%/*}
+INFO=/data/adb/modules/.NLSound-files
+MODID=NLSound
+LIBDIR=/system/vendor
+MODPATH=/data/adb/modules/NLSound
+
+#AML FIX by reiryuki@GitHub
+DIR=$AML/system/vendor/odm/etc
+if [ -d $DIR ] && [ ! -f $AML/disable ]; then
+  chcon -R u:object_r:vendor_configs_file:s0 $DIR
+fi
+
