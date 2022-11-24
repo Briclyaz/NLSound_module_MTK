@@ -923,8 +923,6 @@ lpa30.decode=false
 lpa.use-stagefright=false
 lpa.releaselock=false
 
-af.thread.throttle=0
-
 audio.playback.mch.downsample=false
 vendor.audio.playback.mch.downsample=false
 persist.vendor.audio.playback.mch.downsample=false
