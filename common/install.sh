@@ -791,11 +791,6 @@ sed -i 's/\t/  /g' $DSM
 sed -i 's/params type="*"/params type="float"/g' $DSM
 sed -i 's/currentv="*"/currentv="123.000000"/g' $DSM
 done
-#dsm_configs
-#for ODSMCONFIGS in ${DSMCONFIGS}; do
-#DSMCONF="$MODPATH$(echo $ODSMCONFIGS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
-#cp_ch -f $ORIGDIR$ODSMCONFIGS $DSMCONF
-#sed -i 's/\t/  /g' $DSMCONF
 fi
 
 
