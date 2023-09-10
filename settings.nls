@@ -1,30 +1,20 @@
 MODPATH=${0%/*}
 
-#soon
-RESTORE=false
-
 #installer options
 #Below you can see the decoding of the names of the points, 
 #or trust the numerical values of the points.
 
-#STEP1=Select volume steps
-#STEP2=Increase media volumes
-#STEP3=Improving microphones levels
-#STEP4=Configurating fluence
-#STEP5=Select audio format (16..float)
-#STEP6=Select sampling rates (96..384000)
-#STEP7=Patching audio_platform files
-#STEP8=Disable companders
-#STEP9=Configuration internal audio codes
-#STEP10=Patching device_features files
-#STEP11=Install custom Dirac
-#STEP12=Install patches for mixer_paths files
-#STEP13=Install tweaks in build.prop file
-#STEP14=Install parameters for improve Bluetooth
-#STEP15=Switch audio output (DIRECT -> DIRECT_PCM)
-#STEP16=Install IIRs parameters
-#STEP17=Turn on ignoring all audio effects
-#STEP18=Install experimental tweaks for tinymix
+#STEP1=Configure internal audio codec
+#STEP2=Switch speaker class
+#STEP3=Enable low latency & pulse
+#STEP4=Configure mediatek bessound
+#STEP5=Patching device_features files
+#STEP6=Try unlock more impedances
+#STEP7=Configure all media codecs
+#STEP8=Configure voltages for dsp
+#STEP9=Tweaks for build.prop files
+#STEP10=Improve bluetooth
+#STEP11=Ignore all audio effects 
 
 STEP1=false
 STEP2=false
@@ -37,20 +27,3 @@ STEP8=false
 STEP9=false
 STEP10=false
 STEP11=false
-STEP12=false
-STEP13=false
-STEP14=false
-STEP15=false
-STEP16=false
-STEP17=false
-STEP18=false
-STEP19=false
-STEP20=false
-
-#additional
-VOLSTEPS=skip
-VOLMEDIA=skip
-VOLMIC=skip
-MICMOD=skip
-BITNES=skip
-SAMPLERATE=skip

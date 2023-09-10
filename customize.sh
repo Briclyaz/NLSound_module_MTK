@@ -10,11 +10,13 @@
 
 # Uncomment and change 'MINAPI' and 'MAXAPI' to the minimum and maximum android version for your mod
 # Uncomment DYNLIB if you want libs installed to vendor for oreo+ and system for anything older
-# Uncomment DEBUG if you want full debug logs (saved to /sdcard)
-#MINAPI=21
-#MAXAPI=25
-DYNLIB=true
-DEBUG=true
+# Uncomment PARTOVER if you have a workaround in place for extra partitions in regular magisk install (can mount them yourself - you will need to do this each boot as well). If unsure, keep commented
+# Uncomment PARTITIONS and list additional partitions you will be modifying (other than system and vendor), for example: PARTITIONS="/odm /product /system_ext"
+MINAPI=29
+MAXAPI=34
+#DYNLIB=true
+#PARTOVER=true
+PARTITIONS="/system_ext /mi_ext /product /odm /my_product"
 
 ##########################################################################################
 # Replace list
@@ -41,8 +43,7 @@ REPLACE="
 ##########################################################################################
 
 set_permissions() {
-  [ -d "$MODPATH/system/bin" ] && set_perm_recursive $MODPATH/system/bin 0 0 0755 0755
-  set_perm_recursive $MODPATH/tools 0 0 0755 0755
+  : # Remove this if adding to this function
 
   # Note that all files/folders in magisk module directory have the $MODPATH prefix - keep this prefix on all of your files/folders
   # Some examples:

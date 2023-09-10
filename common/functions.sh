@@ -4,16 +4,33 @@
 #
 ##########################################################################################
 
+require_new_ksu() {
+  ui_print "**********************************"
+  ui_print " Please install KernelSU v0.6.6+! "
+  ui_print "**********************************"
+  exit 1
+}
+
+umount_mirrors() {
+  [ -d $ORIGDIR ] || return 0
+  for i in $ORIGDIR/*; do
+    umount -l $i 2>/dev/null
+  done
+  rm -rf $ORIGDIR 2>/dev/null
+  mount -o ro,remount $MAGISKTMP
+}
+
+cleanup() {
+  $KSU && umount_mirrors
+  rm -rf $MODPATH/common $MODPATH/install.zip 2>/dev/null
+}
+
 abort() {
   ui_print "$1"
   rm -rf $MODPATH 2>/dev/null
   cleanup
   rm -rf $TMPDIR 2>/dev/null
   exit 1
-}
-
-cleanup() {
-  rm -rf $MODPATH/common 2>/dev/null
 }
 
 device_check() {
@@ -78,9 +95,16 @@ cp_ch() {
 
 install_script() {
   case "$1" in
-    -l) shift; local INPATH=$NVBASE/service.d;;
-    -p) shift; local INPATH=$NVBASE/post-fs-data.d;;
-    *) local INPATH=$NVBASE/service.d;;
+    -b) shift; 
+        if $KSU; then
+          local INPATH=$NVBASE/boot-completed.d
+        else
+          local INPATH=$SERVICED
+          sed -i -e '1i (\nwhile [ "$(getprop sys.boot_completed)" != "1" ]; do\n  sleep 1\ndone\nsleep 3\n' -e '$a)&' $1
+        fi;;
+    -l) shift; local INPATH=$SERVICED;;
+    -p) shift; local INPATH=$POSTFSDATAD;;
+    *) local INPATH=$SERVICED;;
   esac
   [ "$(grep "#!/system/bin/sh" $1)" ] || sed -i "1i #!/system/bin/sh" $1
   local i; for i in "MODPATH" "LIBDIR" "MODID" "INFO" "MODDIR"; do
@@ -90,9 +114,8 @@ install_script() {
       *) sed -i "1a $i=$(eval echo \$$i)" $1;;
     esac
   done
-  [ "$1" == "$MODPATH/uninstall.sh" ] && return 0
-  case $(basename $1) in
-    post-fs-data.sh|service.sh) ;;
+  case $1 in
+    "$MODPATH/post-fs-data.sh"|"$MODPATH/service.sh"|"$MODPATH/uninstall.sh") sed -i "s|^MODPATH=.*|MODPATH=\$MODDIR|" $1;; # MODPATH=MODDIR for these scripts (located in module directory)
     *) cp_ch -n $1 $INPATH/$(basename $1) 0755;;
   esac
 }
@@ -105,11 +128,28 @@ prop_process() {
   done < $1
 }
 
+mount_mirrors() {
+  mount -o rw,remount $MAGISKTMP
+  mkdir -p $ORIGDIR/system
+  if $SYSTEM_ROOT; then
+    mkdir -p $ORIGDIR/system_root
+    mount -o ro / $ORIGDIR/system_root
+    mount -o bind $ORIGDIR/system_root/system $ORIGDIR/system
+  else
+    mount -o ro /system $ORIGDIR/system
+  fi
+  for i in /vendor $PARTITIONS; do
+    [ ! -d $i -o -d $ORIGDIR$i ] && continue
+    mkdir -p $ORIGDIR$i
+    mount -o ro $i $ORIGDIR$i
+  done
+}
+
 # Credits
   ui_print " "
   ui_print "***************************************************"
   ui_print "*                                                 *"
-  ui_print "*                NLSound v0.4 BETA                *"
+  ui_print "*               NLSound v0.4 STABLE               *"
   ui_print "*                                                 *"
   ui_print "*               special version for               *"
   ui_print "*                                                 *"
@@ -131,17 +171,41 @@ prop_process() {
   ui_print "*         MMT Extended by Zackptg5 @ XDA          *"
   ui_print "***************************************************"
   ui_print " "
-  
+
+# Credits
+ui_print "**************************************"
+ui_print "*   MMT Extended by Zackptg5 @ XDA   *"
+ui_print "**************************************"
+ui_print " "
+
 # Check for min/max api version
 [ -z $MINAPI ] || { [ $API -lt $MINAPI ] && abort "! Your system API of $API is less than the minimum api of $MINAPI! Aborting!"; }
 [ -z $MAXAPI ] || { [ $API -gt $MAXAPI ] && abort "! Your system API of $API is greater than the maximum api of $MAXAPI! Aborting!"; }
 
+# Min KSU v0.6.6
+[ -z $KSU ] && KSU=false
+$KSU && { [ $KSU_VER_CODE -lt 11184 ] && require_new_ksu; }
+
+# Start debug
+set -x
+
 # Set variables
+[ -z $ARCH32 ] && ARCH32="$(echo $ABI32 | cut -c-3)"
 [ $API -lt 26 ] && DYNLIB=false
 [ -z $DYNLIB ] && DYNLIB=false
-[ -z $DEBUG ] && DEBUG=false
+[ -z $PARTOVER ] && PARTOVER=false
 INFO=$NVBASE/modules/.$MODID-files
-ORIGDIR="$MAGISKTMP/mirror"
+if $KSU; then
+  MAGISKTMP="/mnt"
+  ORIGDIR="$MAGISKTMP/mirror"
+  mount_mirrors
+elif [ "$(magisk --path 2>/dev/null)" ]; then
+  ORIGDIR="$(magisk --path 2>/dev/null)/.magisk/mirror"
+elif [ "$(echo $MAGISKTMP | awk -F/ '{ print $NF}')" == ".magisk" ]; then
+  ORIGDIR="$MAGISKTMP/mirror"
+else
+  ORIGDIR="$MAGISKTMP/.magisk/mirror"
+fi
 if $DYNLIB; then
   LIBPATCH="\/vendor"
   LIBDIR=/system/vendor
@@ -149,6 +213,14 @@ else
   LIBPATCH="\/system"
   LIBDIR=/system
 fi
+# Detect extra partition compatibility (KernelSU or Magisk Delta)
+EXTRAPART=false
+if $KSU || [ "$(echo $MAGISK_VER | awk -F- '{ print $NF}')" == "delta" ]; then
+  EXTRAPART=true
+elif ! $PARTOVER; then
+  unset PARTITIONS
+fi
+
 if ! $BOOTMODE; then
   ui_print "- Only uninstall is supported in recovery"
   ui_print "  Uninstalling!"
@@ -160,11 +232,6 @@ if ! $BOOTMODE; then
   exit 0
 fi
 
-# Debug
-if $DEBUG; then
-  set -x
-fi
-
 # Extract files
 ui_print "- Extracting module files"
 unzip -o "$ZIPFILE" -x 'META-INF/*' 'common/functions.sh' -d $MODPATH >&2
@@ -172,8 +239,9 @@ unzip -o "$ZIPFILE" -x 'META-INF/*' 'common/functions.sh' -d $MODPATH >&2
 
 # Run addons
 if [ "$(ls -A $MODPATH/common/addon/*/install.sh 2>/dev/null)" ]; then
-  ui_print "- Running Addons -"
+  ui_print " "; ui_print "- Running Addons -"
   for i in $MODPATH/common/addon/*/install.sh; do
+    ui_print "  Running $(echo $i | sed -r "s|$MODPATH/common/addon/(.*)/install.sh|\1|")..."
     . $i
   done
 fi
@@ -210,7 +278,12 @@ for i in $(find $MODPATH -type f -name "*.sh" -o -name "*.prop" -o -name "*.rule
   case $i in
     "$MODPATH/service.sh") install_script -l $i;;
     "$MODPATH/post-fs-data.sh") install_script -p $i;;
-    "$MODPATH/uninstall.sh") if [ -s $INFO ] || [ "$(head -n1 $MODPATH/uninstall.sh)" != "# Don't modify anything after this" ]; then
+    "$MODPATH/uninstall.sh") if [ -s $INFO ] || [ "$(head -n1 $MODPATH/uninstall.sh)" != "# Don't modify anything after this" ]; then                          
+                               cp -f $MODPATH/uninstall.sh $MODPATH/$MODID-uninstall.sh # Fallback script in case module manually deleted
+                               sed -i "1i[ -d \"\$MODPATH\" ] && exit 0" $MODPATH/$MODID-uninstall.sh
+                               echo 'rm -f $0' >> $MODPATH/$MODID-uninstall.sh
+                               install_script -l $MODPATH/$MODID-uninstall.sh
+                               rm -f $MODPATH/$MODID-uninstall.sh
                                install_script $MODPATH/uninstall.sh
                              else
                                rm -f $INFO $MODPATH/uninstall.sh
@@ -239,15 +312,19 @@ fi
 ui_print " "
 ui_print "- Setting Permissions"
 set_perm_recursive $MODPATH 0 0 0755 0644
-if [ -d $MODPATH/system/vendor ]; then
-  set_perm_recursive $MODPATH/system/vendor 0 0 0755 0644 u:object_r:vendor_file:s0
-  [ -d $MODPATH/system/vendor/app ] && set_perm_recursive $MODPATH/system/vendor/app 0 0 0755 0644 u:object_r:vendor_app_file:s0
-  [ -d $MODPATH/system/vendor/etc ] && set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0644 u:object_r:vendor_configs_file:s0
-  [ -d $MODPATH/system/vendor/overlay ] && set_perm_recursive $MODPATH/system/vendor/overlay 0 0 0755 0644 u:object_r:vendor_overlay_file:s0
-  for FILE in $(find $MODPATH/system/vendor -type f -name *".apk"); do
-    [ -f $FILE ] && chcon u:object_r:vendor_app_file:s0 $FILE
-  done
-fi
+for i in /system/vendor /vendor /system/vendor/app /vendor/app /system/vendor/etc /vendor/etc /system/odm/etc /odm/etc /system/vendor/odm/etc /vendor/odm/etc /system/vendor/overlay /vendor/overlay; do
+  if [ -d "$MODPATH$i" ] && [ ! -L "$MODPATH$i" ]; then
+    case $i in
+      *"/vendor") set_perm_recursive $MODPATH$i 0 0 0755 0644 u:object_r:vendor_file:s0;;
+      *"/app") set_perm_recursive $MODPATH$i 0 0 0755 0644 u:object_r:vendor_app_file:s0;;
+      *"/overlay") set_perm_recursive $MODPATH$i 0 0 0755 0644 u:object_r:vendor_overlay_file:s0;;
+      *"/etc") set_perm_recursive $MODPATH$i 0 2000 0755 0644 u:object_r:vendor_configs_file:s0;;
+    esac
+  fi
+done
+for i in $(find $MODPATH/system/vendor $MODPATH/vendor -type f -name *".apk" 2>/dev/null); do
+  chcon u:object_r:vendor_app_file:s0 $i
+done
 set_permissions
 
 # Complete install

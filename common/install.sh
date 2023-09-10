@@ -7,120 +7,58 @@ MIRRORDIR="/data/local/tmp/NLSound"
 OTHERTMPDIR="/dev/NLSound"
 
 patch_xml() {
-  case "$2" in
-    *mixer_paths*.xml) sed -i "\$apatch_xml $1 \$MODPATH$(echo $2 | sed "s|$MODPATH||") '$3' \"$4\"" $MODPATH/.aml.sh;;
-    *) sed -i "\$apatch_xml $1 \$MODPATH$(echo $2 | sed "s|$MODPATH||") '$3' \"$4\"" $MODPATH/.aml.sh;;
-  esac
-  local NAME=$(echo "$3" | sed -r "s|^.*/.*\[@.*=\"(.*)\".*$|\1|")
-  local NAMEC=$(echo "$3" | sed -r "s|^.*/.*\[@(.*)=\".*\".*$|\1|")
-  local VAL=$(echo "$4" | sed "s|.*=||")
-  [ "$(echo $4 | grep '=')" ] && local VALC=$(echo "$4" | sed "s|=.*||") || local VALC="value"
-  case "$1" in
-    "-d") xmlstarlet ed -L -d "$3" $2;;
-    "-u") xmlstarlet ed -L -u "$3/@$VALC" -v "$VAL" $2;;
-    "-s") if [ "$(xmlstarlet sel -t -m "$3" -c . $2)" ]; then
-            xmlstarlet ed -L -u "$3/@$VALC" -v "$VAL" $2
-          else
-            local SNP=$(echo "$3" | sed "s|\[.*$||")
-            local NP=$(dirname "$SNP")
-            local SN=$(basename "$SNP")
-            xmlstarlet ed -L -s "$NP" -t elem -n "$SN-$MODID" -i "$SNP-$MODID" -t attr -n "$NAMEC" -v "$NAME" -i "$SNP-$MODID" -t attr -n "$VALC" -v "$VAL" -r "$SNP-$MODID" -v "$SN" $2
-          fi;;
-  esac
-}
-
-#author - Lord_Of_The_Lost@Telegram
-memes_confxml() {
-case $FILE in
-*.conf) sed -i "/$1 {/,/}/d" $FILE
-sed -i "/$2 {/,/}/d" $FILE
-sed -i "s/^effects {/effects {\n  $1 {\nlibrary $2\nuuid $5\n  }/g" $FILE
-sed -i "s/^libraries {/libraries {\n  $2 {\npath $3\/$4\n  }/g" $FILE;;
-*.xml) sed -i "/$1/d" $FILE
-sed -i "/$2/d" $FILE
-sed -i "/<libraries>/ a\<library name=\"$2\" path=\"$4\"\/>" $FILE
-sed -i "/<effects>/ a\<effect name=\"$1\" library=\"$2\" uuid=\"$5\"\/>" $FILE;;
+case "$2" in
+*mixer_paths*.xml) sed -i "\$apatch_xml $1 \$MODPATH$(echo $2 | sed "s|$MODPATH||") '$3' \"$4\"" $MODPATH/.aml.sh;;
+*) sed -i "\$apatch_xml $1 \$MODPATH$(echo $2 | sed "s|$MODPATH||") '$3' \"$4\"" $MODPATH/.aml.sh;;
 esac
-}
-
-libs_checker(){
-ASDK="$(GREP_PROP "ro.build.version.sdk")"
-DYNLIB=true
-[ $ASDK -lt 26 ] && DYNLIB=false
-[ -z $DYNLIB ] && DYNLIB=false
-if $DYNLIB; then 
-DYNLIBPATCH="\/vendor"; 
-else 
-DYNLIBPATCH="\/system"; 
-fi
-}
-
-altmemes_confxml() {
-case $1 in
-*.conf) local SPACES=$(sed -n "/^output_session_processing {/,/^}/ {/^ *music {/p}" $1 | sed -r "s/( *).*/\1/")
-local EFFECTS=$(sed -n "/^output_session_processing {/,/^}/ {/^$SPACES\music {/,/^$SPACES}/p}" $1 | grep -E "^$SPACES +[A-Za-z]+" | sed -r "s/( *.*) .*/\1/g")
-for EFFECT in $EFFECTS; do
-local SPACES=$(sed -n "/^effects {/,/^}/ {/^ *$EFFECT {/p}" $1 | sed -r "s/( *).*/\1/")
-[ "$EFFECT" != "atmos" ] && sed -i "/^effects {/,/^}/ {/^$SPACES$EFFECT {/,/^$SPACES}/ s/^/#/g}" $1
-done;;
-*.xml) local EFFECTS=$(sed -n "/^ *<postprocess>$/,/^ *<\/postprocess>$/ {/^ *<stream type=\"music\">$/,/^ *<\/stream>$/ {/<stream type=\"music\">/d; /<\/stream>/d; s/<apply effect=\"//g; s/\"\/>//g; p}}" $1)
-for EFFECT in $EFFECTS; do
-[ "$EFFECT" != "atmos" ] && sed -ri "s/^( *)<apply effect=\"$EFFECT\"\/>/\1<\!--<apply effect=\"$EFFECT\"\/>-->/" $1
-done;;
-esac
-}
-
-#author - Lord_Of_The_Lost@Telegram
-effects_patching() {
-case $1 in
--pre) CONF=pre_processing; XML=preprocess;;
--post) CONF=output_session_processing; XML=postprocess;;
-esac
-case $2 in
-*.conf) if [ ! "$(sed -n "/^$CONF {/,/^}/p" $2)" ]; then
-echo -e "\n$CONF {\n$3 {\n$4 {\n}\n}\n}" >> $2
-elif [ ! "$(sed -n "/^$CONF {/,/^}/ {/$3 {/,/^}/p}" $2)" ]; then
-sed -i "/^$CONF {/,/^}/ s/$CONF {/$CONF {\n$3 {\n$4 {\n}\n}/" $2
-elif [ ! "$(sed -n "/^$CONF {/,/^}/ {/$3 {/,/^}/ {/$4 {/,/}/p}}" $2)" ]; then
-sed -i "/^$CONF {/,/^}/ {/$3 {/,/^}/ s/$3 {/$3 {\n$4 {\n}/}" $2
-fi;;
-*.xml) if [ ! "$(sed -n "/^ *<$XML>/,/^ *<\/$XML>/p" $2)" ]; then 
-sed -i "/<\/audio_effects_conf>/i\<$XML>\n   <stream type=\"$3\">\n<apply effect=\"$4\"\/>\n<\/stream>\n<\/$XML>" $2
-elif [ ! "$(sed -n "/^ *<$XML>/,/^ *<\/$XML>/ {/<stream type=\"$3\">/,/<\/stream>/p}" $2)" ]; then 
-sed -i "/^ *<$XML>/,/^ *<\/$XML>/ s/<$XML>/<$XML>\n<stream type=\"$3\">\n<apply effect=\"$4\"\/>\n<\/stream>/" $2
-elif [ ! "$(sed -n "/^ *<$XML>/,/^ *<\/$XML>/ {/<stream type=\"$3\">/,/<\/stream>/ {/^ *<apply effect=\"$4\"\/>/p}}" $2)" ]; then
-sed -i "/^ *<$XML>/,/^ *<\/$XML>/ {/<stream type=\"$3\">/,/<\/stream>/ s/<stream type=\"$3\">/<stream type=\"$3\">\n<apply effect=\"$4\"\/>/}" $2
+local NAME=$(echo "$3" | sed -r "s|^.*/.*\[@.*=\"(.*)\".*$|\1|")
+local NAMEC=$(echo "$3" | sed -r "s|^.*/.*\[@(.*)=\".*\".*$|\1|")
+local VAL=$(echo "$4" | sed "s|.*=||")
+[ "$(echo $4 | grep '=')" ] && local VALC=$(echo "$4" | sed "s|=.*||") || local VALC="value"
+case "$1" in
+"-d") xmlstarlet ed -L -d "$3" $2;;
+"-u") xmlstarlet ed -L -u "$3/@$VALC" -v "$VAL" $2;;
+"-s") if [ "$(xmlstarlet sel -t -m "$3" -c . $2)" ]; then
+xmlstarlet ed -L -u "$3/@$VALC" -v "$VAL" $2
+else
+local SNP=$(echo "$3" | sed "s|\[.*$||")
+local NP=$(dirname "$SNP")
+local SN=$(basename "$SNP")
+xmlstarlet ed -L -s "$NP" -t elem -n "$SN-$MODID" -i "$SNP-$MODID" -t attr -n "$NAMEC" -v "$NAME" -i "$SNP-$MODID" -t attr -n "$VALC" -v "$VAL" -r "$SNP-$MODID" -v "$SN" $2
 fi;;
 esac
 }
 
-[ -f /system/vendor/build.prop ] && BUILDS="/system/build.prop /system/vendor/build.prop" || BUILDS="/system/build.prop"
-
+[ -f /system/vendor/build.prop ] && BUILDS="/system/build.prop /system/vendor/build.prop /my_product/build.prop" || BUILDS="/system/build.prop"
 MTKG90T=$(grep "ro.board.platform=mt6785" $BUILDS)
-HELIOG85=$(grep "ro.board.platform=mt6768" $BUILDS)
+HELIOA22=$(grep "ro.board.platform=mt6765" $BUILDS)
+HELIOG85G88=$(grep "ro.board.platform=mt6768" $BUILDS)
 MT6875=$(grep "ro.board.platform=mt6873" $BUILDS)
+DIMENSITY8100=$(grep "ro.board.platform=mt6895" $BUILDS)
+
+#devices
 RN8PRO=$(grep -E "ro.product.vendor.device=begonia.*|ro.product.vendor.device=begonianin.*" $BUILDS)
 R10X4GNOTE9=$(grep -E "ro.product.vendor.device=merlin.*" $BUILDS)
 R10XPRO5G=$(grep -E "ro.product.vendor.device=bomb.*" $BUILDS)
 R10X5G=$(grep -E "ro.product.vendor.device=atom.*" $BUILDS)
+POCOX4GT=$(grep -E "ro.product.vendor.device=xaga.*" $BUILDS)
+ONEPLUSACE=$(grep -E "ro.build.product=CPH2411.*|ro.build.product=CPH2423.*|ro.build.product=PKGM10.*" $BUILDS)
 
-APOS="$(find /system /vendor /system_ext /product -type f -name "*AudioParamOptions.xml")"
-ADEVS="$(find /system /vendor /system_ext /product -type f -name "*audio_device.xml")"
-AUEMS="$(find /system /vendor /system_ext /product -type f -name "*audio_em.xml")"
-AURCONFS="$(find /system /vendor /system_ext /product -type f -name "*aurisys_config.xml")"
-AURCONFHIFIS="$(find /system /vendor /system_ext /product -type f -name "*aurisys_config.xml")"
-MCODECS="$(find /system /vendor /system_ext /product -type f -name "media_codecs_*_audio.xml")"
-DSMS="$(find /system /vendor /system_ext /product -type f -name "DSM.xml")"
-DSMCONFIGS="$(find /system /vendor /system_ext /product -type f -name "DSM_config.xml")"
-APAROPTS="$(find /system /vendor /system_ext /product -type f -name "AudioParamOptions.xml")"
+ADEVS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "*audio_device*.xml")"
+AUEMS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "*audio_em*.xml")"
+AURCONFS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "*aurisys_config*.xml")"
+MCODECS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "media_codecs_c2_audio.xml" -o -name "media_codecs_c2.xml" -o -name "media_codecs_google_audio.xml" -o -name "media_codecs_google_c2_audio.xml")"
+DSMS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "DSM*.xml")"
+DSMCONFIGS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "DSM_config*.xml")"
+APAROPTS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "*AudioParamOptions*.xml")"
+IMPAUPARMS="$(find /system /vendor /system_ext /mi_ext /product /odm /my_product -type f -name "*HpImpedance_AudioParam*.xml")"
 
 VNDK=$(find /system/lib /vendor/lib -type d -iname "*vndk*")
 VNDK64=$(find /system/lib64 /vendor/lib64 -type d -iname "*vndk*")
 VNDKQ=$(find /system/lib /vendor/lib -type d -iname "vndk*-Q")
 
 SETTINGS=$MODPATH/settings.nls
-
-RESTORE=false
+PROP=$MODPATH/system.prop
 
 STEP1=false
 STEP2=false
@@ -133,27 +71,19 @@ STEP8=false
 STEP9=false
 STEP10=false
 STEP11=false
-STEP12=false
-STEP13=false
-STEP14=false
-STEP15=false
-STEP16=false
-STEP17=false
-STEP18=false
-STEP19=false
-STEP20=false
+
 
 mkdir -p $MODPATH/tools
-cp_ch $MODPATH/common/addon/External-Tools/tools/$ARCH32/* $MODPATH/tools/
+cp_ch $MODPATH/common/addon/External-Tools/tools/$ARCH32/\* $MODPATH/tools/.
 
 ui_print " - Configurate me, pls >.< -"
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [1/12]                                          *"
+ui_print "* [1/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*           • This option configure •             *"
-ui_print "*            your interal audio codec             *"
-ui_print "*       of this option may cause no sound!        *"
+ui_print "*       • CONFIGURE INTERNAL AUDIO CODEC •        *"
+ui_print "*                                                 *"
+ui_print "* This option configure your interal audio codec. *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -165,11 +95,11 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [2/12]                                          *"
+ui_print "* [2/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*           • This option configure •             *"
-ui_print "*            your interal audio codec             *"
-ui_print "*       of this option may cause no sound!        *"
+ui_print "*            • SWITCH SPEAKER CLASS •             *"
+ui_print "*                                                 *"
+ui_print "*   This option switch speaker class on Hi-Fi.    *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -182,11 +112,12 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [3/12]                                          *"
+ui_print "* [3/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*      • This option applies new perameters •     *"
-ui_print "*           to your device's audio codec.         *"
-ui_print "*                 May cause problems.             *"
+ui_print "*          • ENABLE LOW LATENCY & PULSE •         *"
+ui_print "*                                                 *"
+ui_print "*    This option enable low latency route and     *"
+ui_print "*        activate support pulse technology.       *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -199,9 +130,11 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [4/12]                                          *"
+ui_print "* [4/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*   • This option configure MediaTek Bessound •   *"
+ui_print "*          • CONFIGURE MEDIATEK BESSOUND •        *"
+ui_print "*                                                 *"
+ui_print "*      This option configure MediaTek Bessound    *"
 ui_print "*            technology in your device.           *"
 ui_print "*                May cause problems.              *"
 ui_print "*_________________________________________________*"
@@ -216,24 +149,18 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [5/12]                                          *"
+ui_print "* [5/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*       • This step will do the following •       *"
+ui_print "*       • PATCHING DEVICE_FEATURES FILES •        *"
+ui_print "*                                                 *"
+ui_print "*        This step will do the following:         *"
 ui_print "*        - Unlocks the sampling frequency         *"
-ui_print "*          of the audio up to 384000 kHz;         *"
-ui_print "*        - Enable the AAC codec switch in         *"
-ui_print "*          the Bluetooth headphone settings;      *"
-ui_print "*        - Enable additional support for          *"
-ui_print "*          IIR parameters;                        *"
-ui_print "*        - Enable support for stereo recording;   *"
+ui_print "*          of the audio up to 192000 Hz;          *"
+ui_print "*        - Enable HD record in camcorder;         *"
+ui_print "*        - Increase VoIP record quality;          *"
 ui_print "*        - Enable support for hd voice            *"
 ui_print "*          recording quality;                     *"
-ui_print "*        - Enable Dolby and Hi-Fi support         *"
-ui_print "*          (on some devices);                     *"
-ui_print "*        - Enable audio focus support             *"
-ui_print "*          during video recording;                *"
-ui_print "*        - Enable support for quick connection    *"
-ui_print "*          of Bluetooth headphones.               *"
+ui_print "*        - Enable Hi-Fi support (on some devices) *"
 ui_print "*                                                 *"
 ui_print "*  And much more . . .                            *"
 ui_print "*_________________________________________________*"
@@ -247,11 +174,17 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [6/12]                                          *"
+ui_print "* [6/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*      • This step improve audio parameters •     *"
-ui_print "*           in your internal audio codec.         *"
-ui_print "*                May case problem.                *"
+ui_print "*        • TRY UNLOCK MORE IMPEDANCES  •          *" 
+ui_print "*                                                 *"
+ui_print "*     Attempts to unlock additional options:      *"
+ui_print "*                   - 24 ohm;                     *"
+ui_print "*                   - 48 ohm;                     *"
+ui_print "*                   - 96 ohm;                     *"
+ui_print "*                   - 192 ohm;                    *"
+ui_print "*       May not be supported by the device        *" 
+ui_print "*              and cause problems.                *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -263,11 +196,12 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [7/12]                                          *"
+ui_print "* [7/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*    • This option configure DSP HAL libs •       *"
-ui_print "*          technology in your device.             *"
-ui_print "*              May cause problems.                *"
+ui_print "*        • CONFIGURE ALL MEDIA CODECS •           *"
+ui_print "*                                                 *"
+ui_print "*        This step patching media codecs          *"
+ui_print "*     in your system for improving quality.       *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -279,9 +213,11 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [8/12]                                          *"
+ui_print "* [8/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*      • This step patching media codecs •        *"
+ui_print "*       • CONFIGURE VOLTAGES FOR DSP •            *"
+ui_print "*                                                 *"
+ui_print "*        This step patching DSM files             *"
 ui_print "*     in your system for improving quality.       *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
@@ -294,10 +230,14 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [9/12]                                          *"
+ui_print "* [9/11]                                          *"
 ui_print "*                                                 *"
-ui_print "*      • This step patching DSM files •           *"
-ui_print "*     in your system for improving quality.       *"
+ui_print "*         • TWEAKS FOR BUILD.PROP FILES •         *"
+ui_print "*                                                 *"
+ui_print "*     A huge number of global settings that       *"
+ui_print "*      greatly change the quality of audio        *"
+ui_print "*   for the better. Don't hesitate and just go    *"
+ui_print "*         along with the installation.            *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -309,10 +249,13 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [10/12]                                         *"
+ui_print "* [10/11]                                         *"
 ui_print "*                                                 *"
-ui_print "*  • This step added new Dirac in your system •   *"
-ui_print "*             May cause problems.                 *"
+ui_print "*             • IMPROVE BLUETOOTH •               *"
+ui_print "*                                                 *"
+ui_print "*   This option will improve the audio quality    *"
+ui_print "*    in Bluetooth, as well as fix the problem     *"
+ui_print "*      of disappearing the AAC codec switch       *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -324,11 +267,21 @@ fi
 
 ui_print " "
 ui_print "***************************************************"
-ui_print "* [11/12]                                         *"
+ui_print "* [11/11]                                         *"
 ui_print "*                                                 *"
-ui_print "*  • This option will change the sound quality •  *"
-ui_print "*                  the most.                      *"
-ui_print "*             May cause problems.                 *"
+ui_print "*          • IGNORE ALL AUDIO EFFECTS •           *"
+ui_print "*                                                 *"
+ui_print "*      This item disables any audio effects       *"
+ui_print "*   at the system level. It breaks XiaomiParts,   *"
+ui_print "*      Dirac, Dolby, and other equalizers.        *"
+ui_print "*   Significantly increases the sound quality     *"
+ui_print "*            for quality headphones.              *"
+ui_print "*                                                 *"
+ui_print "*                     Note:                       *"
+ui_print "*     If you agree, the sound becomes drier,      *"
+ui_print "*                  "cleaner".                     *"
+ui_print "*      However, many people are advised to        *"
+ui_print "*               skip this point.                  *"
 ui_print "*_________________________________________________*"
 ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
 ui_print "***************************************************"
@@ -338,22 +291,19 @@ STEP11=true
 sed -i 's/STEP11=false/STEP11=true/g' $SETTINGS
 fi
 
+ui_print " - YOUR SETTINGS: "
+ui_print " 1. Configure internal audio codec: $STEP1"
+ui_print " 2. Switch speaker class: $STEP2"
+ui_print " 3. Enabe low latency and pulse: $STEP3"
+ui_print " 4. Configure mediatek bessound: $STEP4"
+ui_print " 5. Patching device_features files: $STEP5"
+ui_print " 6. Try unlock more impedances: $STEP6"
+ui_print " 7. Configure all media codecs: $STEP7"
+ui_print " 8. Configure voltages for DSP: $STEP8"
+ui_print " 9. Tweaks for build.prop files: $STEP9"
+ui_print " 10. Improve Bluetooth: $STEP10"
+ui_print " 11. Ignore all audio effects: $STEP11"
 ui_print " "
-ui_print "***************************************************"
-ui_print "* [12/12]                                         *"
-ui_print "*                                                 *"
-ui_print "* • This option will improve the audio quality •  *"
-ui_print "*    in Bluetooth, as well as fix the problem     *"
-ui_print "*      of disappearing the AAC codec switch       *"
-ui_print "*_________________________________________________*"
-ui_print "*        [VOL+] - Install | [VOL-] - skip         *"
-ui_print "***************************************************"
-ui_print " "
-if chooseport 60; then
-STEP12=true
-sed -i 's/STEP12=false/STEP12=true/g' $SETTINGS
-fi
-
 
 ui_print " "
 ui_print " - Processing. . . -"
@@ -362,249 +312,104 @@ ui_print " - You can minimize Magisk and use the device normally -"
 ui_print " - and then come back here to reboot and apply the changes. -"
 ui_print " "
 
+#audio parameters
 if [ "$STEP1" == "true" ]; then
-for OAPO in ${APOS}; do
-APO="$MODPATH$(echo $OAPO | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
-cp_ch -f $ORIGDIR$OAPO $APO
-sed -i 's/\t/  /g' $APO
-if [ "$RN8PRO" ]; then
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOIP_ENHANCEMENT_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HAC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HEADSET_ACTIVE_NOISE_CANCELLATION"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_AUDIO_TUNING_TOOL_VERSION"]' "V5"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HIFIAUDIO_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_A2DP_OFFLOAD_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_MIC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_BESLOUDNESS_SUPPORT"]' "yes"
-fi
-if [ "$R10X4GNOTE9" ]; then
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOIP_ENHANCEMENT_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HAC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HEADSET_ACTIVE_NOISE_CANCELLATION"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_AUDIO_TUNING_TOOL_VERSION"]' "V5"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HIFIAUDIO_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_A2DP_OFFLOAD_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_MIC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_BESLOUDNESS_SUPPORT"]' "yes"
-fi
-if [ "$R10XPRO5G" ]; then
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOIP_ENHANCEMENT_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HAC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HEADSET_ACTIVE_NOISE_CANCELLATION"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_AUDIO_TUNING_TOOL_VERSION"]' "V5"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HIFIAUDIO_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_A2DP_OFFLOAD_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_MIC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_BESLOUDNESS_SUPPORT"]' "yes"
-fi
-if [ "$R10X5G" ]; then
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOIP_ENHANCEMENT_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HAC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HEADSET_ACTIVE_NOISE_CANCELLATION"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_AUDIO_TUNING_TOOL_VERSION"]' "V5"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_HIFIAUDIO_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_A2DP_OFFLOAD_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_ASR_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="VIR_VOICE_UNLOCK_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_MIC_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_FIR_IIR_ENH_SUPPORT"]' "yes"
-patch_xml -u $APO '/AudioParamOptions/Param[@name="MTK_BESLOUDNESS_SUPPORT"]' "yes"
-fi
+for OAPAROPTS in ${APAROPTS}; do 
+APAR="$MODPATH$(echo $OAPAROPTS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
+cp_ch -f $ORIGDIR$OAPAROPTS $APAR
+sed -i 's/\t/  /g' $APAR
+sed -i 's/Param name="MTK_WB_SPEECH_SUPPORT" value=".*"/Param name="MTK_WB_SPEECH_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_AUDIO_HD_REC_SUPPORT" value=".*"/Param name="MTK_WB_MTK_AUDIO_HD_REC_SUPPORTSPEECH_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_HANDSFREE_DMNR_SUPPORT" value=".*"/Param name="MTK_HANDSFREE_DMNR_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="DMNR_TUNNING_AT_MODEMSIDE" value=".*"/Param name="DMNR_TUNNING_AT_MODEMSIDE" value=""/g' $APAR
+sed -i 's/Param name="MTK_VOIP_ENHANCEMENT_SUPPORT" value=".*"/Param name="MTK_VOIP_ENHANCEMENT_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="MTK_TB_WIFI_3G_MODE" value=".*"/Param name="MTK_TB_WIFI_3G_MODE" value=""/g' $APAR
+sed -i 's/Param name="MTK_ACF_AUTO_GEN_SUPPORT" value=".*"/Param name="MTK_ACF_AUTO_GEN_SUPPORT" value=""/g' $APAR
+sed -i 's/Param name="MTK_AUDIO_BLOUD_CUSTOMPARAMETER_REV" value=".*"/Param name="MTK_AUDIO_BLOUD_CUSTOMPARAMETER_REV" value=""/g' $APAR
+sed -i 's/Param name="MTK_MAGICONFERENCE_SUPPORT" value=".*"/Param name="MTK_MAGICONFERENCE_SUPPORT" value=""/g' $APAR
+sed -i 's/Param name="MTK_HAC_SUPPORT" value=".*"/Param name="MTK_HAC_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="MATV_AUDIO_SUPPORT" value=".*"/Param name="MATV_AUDIO_SUPPORT" value=""/g' $APAR
+sed -i 's/Param name="MTK_FM_SUPPORT" value=".*"/Param name="MTK_FM_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_WB_SPEECH_SUPMTK_SUPPORT_TC1_TUNNINGPORT" value=".*"/Param name="MTK_WB_SPEECH_SUPMTK_SUPPORT_TC1_TUNNINGPORT" value=""/g' $APAR
+sed -i 's/Param name="MTK_AURISYS_FRAMEWORK_SUPPORT" value=".*"/Param name="MTK_AURISYS_FRAMEWORK_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_BESLOUDNESS_RUN_WITH_HAL" value=".*"/Param name="MTK_BESLOUDNESS_RUN_WITH_HAL" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_AUDIO" value=".*"/Param name="MTK_AUDIO" value="yes"/g' $APAR
+sed -i 's/Param name="USE_CUSTOM_AUDIO_POLICY" value=".*"/Param name="USE_CUSTOM_AUDIO_POLICY" value=""/g' $APAR
+sed -i 's/Param name="MTK_SMARTPA_DUMMY_LIB" value=".*"/Param name="MTK_SMARTPA_DUMMY_LIB" value=""/g' $APAR
+sed -i 's/Param name="MTK_HIFIAUDIO_SUPPORT" value=".*"/Param name="MTK_HIFIAUDIO_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_BESLOUDNESS_SUPPORT" value=".*"/Param name="MTK_BESLOUDNESS_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="MTK_A2DP_OFFLOAD_SUPPORT" value=".*"/Param name="MTK_A2DP_OFFLOAD_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="MTK_TTY_SUPPORT" value=".*"/Param name="v" value="yes"/g' $APAR
+sed -i 's/Param name="VIR_WIFI_ONLY_SUPPORT" value=".*"/Param name="VIR_WIFI_ONLY_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="VIR_3G_DATA_ONLY_SUPPORT" value=".*"/Param name="VIR_3G_DATA_ONLY_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="VIR_ASR_SUPPORT" value=".*"/Param name="VIR_ASR_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="VIR_NO_SPEECH" value=".*"/Param name="VIR_NO_SPEECH" value="no"/g' $APAR
+sed -i 's/Param name="VIR_INCALL_NORMAL_DMNR_SUPPORT" value=".*"/Param name="VIR_INCALL_NORMAL_DMNR_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="VIR_INCALL_HANDSFREE_DMNR_SUPPORT" value=".*"/Param name="VIR_INCALL_HANDSFREE_DMNR_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="VIR_VOICE_UNLOCK_SUPPORT" value=".*"/Param name="VIR_VOICE_UNLOCK_SUPPORT" value=""/g' $APAR
+sed -i 's/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V5" value=".*"/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V5" value="yes"/g' $APAR
+sed -i 's/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V4" value=".*"/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V4" value="no"/g' $APAR
+sed -i 's/Param name="VIR_MAGI_CONFERENCE_SUPPORT" value=".*"/Param name="VIR_MAGI_CONFERENCE_SUPPORT" value="no"/g' $APAR
+sed -i 's/Param name="MTK_AUDIO_HIERARCHICAL_PARAM_SUPPORT" value=".*"/Param name="MTK_AUDIO_HIERARCHICAL_PARAM_SUPPORT" value="yes"/g' $APAR
+sed -i 's/Param name="5_POLE_HS_SUPPORT" value=".*"/Param name="5_POLE_HS_SUPPORT" value=""/g' $APAR
+sed -i 's/Param name="VIR_MTK_USB_PHONECALL" value=".*"/Param name="VIR_MTK_USB_PHONECALL" value="yes"/g' $APAR
+sed -i 's/Param name="SPK_PATH_NO_ANA" value=".*"/Param name="SPK_PATH_NO_ANA" value="yes"/g' $APAR
+sed -i 's/Param name="RCV_PATH_INT" value=".*"/Param name="RCV_PATH_INT" value="yes"/g' $APAR
+sed -i 's/Param name="SPH_PARAM_VERSION" value=".*"/Param name="SPH_PARAM_VERSION" value="3.0"/g' $APAR
+sed -i 's/Param name="SPH_PARAM_TTY" value=".*"/Param name="SPH_PARAM_TTY" value="yes"/g' $APAR
+sed -i 's/Param name="FIX_WB_ENH" value=".*"/Param name="FIX_WB_ENH" value="yes"/g' $APAR
+sed -i 's/Param name="SPH_PARAM_SV" value=".*"/Param name="SPH_PARAM_SV" value="yes"/g' $APAR
+sed -i 's/Param name="VIR_SCENE_CUSTOMIZATION_SUPPORT" value=".*"/Param name="VIR_SCENE_CUSTOMIZATION_SUPPORT" value="yes"/g' $APAR
 done
 fi
 
 if [ "$STEP2" == "true" ]; then
 for OADEV in ${ADEVS}; do
-ADEV="$MODPATH$(echo $OADEV | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
+ADEV="$MODPATH$(echo $OADEV | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
 cp_ch -f $ORIGDIR$OADEV $ADEV
 sed -i 's/\t/  /g' $ADEV
-if [ "$RN8PRO" ]; then
 patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Speaker_class_Switch"]' "CLASSH"
 patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Debug_Setting"]' "1"
 patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Codec_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/path[@name="ext_speaker_output"]/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-fi
-if [ "$R10X4GNOTE9" ]; then
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Speaker_class_Switch"]' "CLASSH"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Codec_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/path[@name="ext_speaker_output"]/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-fi
-if [ "$R10XPRO5G" ]; then
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Speaker_class_Switch"]' "CLASSH"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Codec_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/path[@name="ext_speaker_output"]/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-fi
-if [ "$R10X5G" ]; then
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Speaker_class_Switch"]' "CLASSH"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Audio_Codec_Debug_Setting"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-patch_xml -u $ADEV '/root/mixercontrol/path[@name="ext_speaker_output"]/kctl[@name="Ext_Speaker_Amp_Switch"]' "1"
-fi
 done
 fi
 
+ui_print " "
+ui_print "   ########================================ 20% done!"
+
+
 if [ "$STEP3" == "true" ]; then
 for OAUEM in ${AUEMS}; do
-AUEM="$MODPATH$(echo $OAUEM | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
+AUEM="$MODPATH$(echo $OAUEM | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
 cp_ch -f $ORIGDIR$OAUEM $AUEM
 sed -i 's/\t/  /g' $AUEM
-if [ "$RN8PRO" ]; then
 patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="TDM_Record"]' "0"
 patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SET_MODE"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="HAHA"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="Set_SpeechCall_DL_Mute"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SetFmVolume"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="ANC_CMD"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="dumplog"]' "0"
 patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="LowLatencyDebugEnable"]' "1"
 patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="DetectPulseEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.track.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.drc.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.offload.write.raw"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.resampler.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.end.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.record.dump.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.effect.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.aaudio.pcm"]/check' "1"
-fi
-if [ "$R10X4GNOTE9" ]; then
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="TDM_Record"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SET_MODE"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="HAHA"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="Set_SpeechCall_DL_Mute"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SetFmVolume"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="ANC_CMD"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="dumplog"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="LowLatencyDebugEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="DetectPulseEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.track.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.drc.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.offload.write.raw"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.resampler.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.end.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.record.dump.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.effect.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.aaudio.pcm"]/check' "1"
-fi
-if [ "$R10XPRO5G" ]; then
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="TDM_Record"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SET_MODE"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="HAHA"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="Set_SpeechCall_DL_Mute"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SetFmVolume"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="ANC_CMD"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="dumplog"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="LowLatencyDebugEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="DetectPulseEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.track.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.drc.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.offload.write.raw"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.resampler.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.end.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.record.dump.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.effect.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.aaudio.pcm"]/check' "1"
-fi
-if [ "$R10X5G" ]; then
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="TDM_Record"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SET_MODE"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="HAHA"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="Set_SpeechCall_DL_Mute"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="SetFmVolume"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="ANC_CMD"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="dumplog"]' "0"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="LowLatencyDebugEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/SetParameters[@name="DetectPulseEnable"]' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.track.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.drc.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.offload.write.raw"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.resampler.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.mixer.end.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.record.dump.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.af.effect.pcm"]/check' "1"
-patch_xml -u $AUEM '/AudioParameter/DumpOptions/Category[@name="AudioMixer"]/option [@name="SetParameters"]/cmd[@name="vendor.aaudio.pcm"]/check' "1"
-fi
 done
 fi
 
 if [ "$STEP4" == "true" ]; then
 for OAURCONF in ${AURCONFS}; do
-AURCONF="$MODPATH$(echo $OAURCONF | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
+AURCONF="$MODPATH$(echo $OAURCONF | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
 cp_ch -f $ORIGDIR$OAURCONF $AURCONF
 sed -i 's/\t/  /g' $AURCONF
-if [ "$RN8PRO" ]; then
 patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
 patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
 patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
 patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
 patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000"
 patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-fi
-if [ "$R10X4GNOTE9" ]; then
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-fi
-if [ "$R10XPRO5G" ]; then
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-fi
-if [ "$R10X5G" ]; then
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_iir"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000"
-patch_xml -u $AURCONF '/aurisys_config/library[@name="mtk_speech_enh"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-fi
 done
 fi
 
+ui_print " "
+ui_print "   ################======================== 40% done!"
+
 if [ "$STEP5" == "true" ]; then
 for ODEVFEA in ${DEVFEAS}; do 
-DEVFEA="$MODPATH$(echo $ODEVFEA | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
+DEVFEA="$MODPATH$(echo $ODEVFEA | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
 cp_ch -f $ORIGDIR$ODEVFEA $DEVFEA
 sed -i 's/\t/  /g' $DEVFEA
 patch_xml -s $DEVFEA '/features/bool[@name="support_a2dp_latency"]' "true"
@@ -618,140 +423,25 @@ patch_xml -s $DEVFEA '/features/bool[@name="support_interview_record_param"]' "f
 done
 fi
 
-#audio parameters
 if [ "$STEP6" == "true" ]; then
-for OAPAROPTS in ${APAROPTS}; do 
-APAR="$MODPATH$(echo $OAPAROPTS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
-cp_ch -f $ORIGDIR$OAPAROPTS $APAR
-sed -i 's/\t/  /g' $APAR
-sed -i 's/Param name="MTK_WB_SPEECH_SUPPORT" value=".*"/Param name="MTK_WB_SPEECH_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_HD_REC_SUPPORT" value=".*"/Param name="MTK_WB_MTK_AUDIO_HD_REC_SUPPORTSPEECH_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_DUAL_MIC_SUPPORT" value=".*"/Param name="MTK_DUAL_MIC_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_HANDSFREE_DMNR_SUPPORT" value=".*"/Param name="MTK_HANDSFREE_DMNR_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="DMNR_TUNNING_AT_MODEMSIDE" value=".*"/Param name="DMNR_TUNNING_AT_MODEMSIDE" value=""/g' $APAR
-sed -i 's/Param name="MTK_VOIP_ENHANCEMENT_SUPPORT" value=".*"/Param name="MTK_VOIP_ENHANCEMENT_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_TB_WIFI_3G_MODE" value=".*"/Param name="MTK_TB_WIFI_3G_MODE" value=""/g' $APAR
-sed -i 's/Param name="MTK_DISABLE_EARPIECE" value=".*"/Param name="MTK_DISABLE_EARPIECE" value=""/g' $APAR
-sed -i 's/Param name="MTK_ASR_SUPPORT" value=".*"/Param name="MTK_ASR_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_VOIP_NORMAL_DMNR" value=".*"/Param name="MTK_VOIP_NORMAL_DMNR" value="no"/g' $APAR
-sed -i 's/Param name="MTK_VOIP_HANDSFREE_DMNR" value=".*"/Param name="MTK_VOIP_HANDSFREE_DMNR" value="no"/g' $APAR
-sed -i 's/Param name="MTK_INCALL_NORMAL_DMNR" value=".*"/Param name="MTK_INCALL_NORMAL_DMNR" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_VOICE_UNLOCK_SUPPORT" value=".*"/Param name="MTK_VOICE_UNLOCK_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_VOICE_UI_SUPPORT" value=".*"/Param name="MTK_VOICE_UI_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_ACF_AUTO_GEN_SUPPORT" value=".*"/Param name="MTK_ACF_AUTO_GEN_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_SPEAKER_MONITOR_SUPPORT" value=".*"/Param name="MTK_SPEAKER_MONITOR_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_BLOUD_CUSTOMPARAMETER_REV" value=".*"/Param name="MTK_AUDIO_BLOUD_CUSTOMPARAMETER_REV" value=""/g' $APAR
-sed -i 's/Param name="MTK_MAGICONFERENCE_SUPPORT" value=".*"/Param name="MTK_MAGICONFERENCE_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_HAC_SUPPORT" value=".*"/Param name="MTK_HAC_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_SPH_LPBK_PARAM" value=".*"/Param name="MTK_AUDIO_SPH_LPBK_PARAM" value=""/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_GAIN_TABLE_BT" value=".*"/Param name="MTK_AUDIO_GAIN_TABLE_BT" value=""/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_BT_NREC_WO_ENH_MODE" value=".*"/Param name="MTK_AUDIO_BT_NREC_WO_ENH_MODE" value=""/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_TUNING_TOOL_V2_PHASE" value=".*"/Param name="MTK_AUDIO_TUNING_TOOL_V2_PHASE" value="2"/g' $APAR
-sed -i 's/Param name="MATV_AUDIO_SUPPORT" value=".*"/Param name="MATV_AUDIO_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_FM_SUPPORT" value=".*"/Param name="MTK_FM_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_HEADSET_ACTIVE_NOISE_CANCELLATION" value=".*"/Param name="MTK_HEADSET_ACTIVE_NOISE_CANCELLATION" value=""/g' $APAR
-sed -i 's/Param name="MTK_WB_SPEECH_SUPMTK_SUPPORT_TC1_TUNNINGPORT" value=".*"/Param name="MTK_WB_SPEECH_SUPMTK_SUPPORT_TC1_TUNNINGPORT" value=""/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_SPEAKER_PATH" value=".*"/Param name="MTK_AUDIO_SPEAKER_PATH" value="smartpa_nxp_tfa9874"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_NUMBER_OF_MIC" value=".*"/Param name="MTK_AUDIO_NUMBER_OF_MIC" value="2"/g' $APAR
-sed -i 's/Param name="MTK_AURISYS_FRAMEWORK_SUPPORT" value=".*"/Param name="MTK_AURISYS_FRAMEWORK_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_BESLOUDNESS_RUN_WITH_HAL" value=".*"/Param name="MTK_BESLOUDNESS_RUN_WITH_HAL" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO" value=".*"/Param name="MTK_AUDIO" value="yes"/g' $APAR
-sed -i 's/Param name="USE_CUSTOM_AUDIO_POLICY" value=".*"/Param name="USE_CUSTOM_AUDIO_POLICY" value=""/g' $APAR
-sed -i 's/Param name="USE_XML_AUDIO_POLICY_CONF" value=".*"/Param name="USE_XML_AUDIO_POLICY_CONF" value="1"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_TUNING_TOOL_VERSION" value=".*"/Param name="MTK_AUDIO_TUNING_TOOL_VERSION" value="V2.2"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_TUNNELING_SUPPORT" value=".*"/Param name="MTK_AUDIO_TUNNELING_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_SMARTPA_DUMMY_LIB" value=".*"/Param name="MTK_SMARTPA_DUMMY_LIB" value=""/g' $APAR
-sed -i 's/Param name="MTK_HIFIAUDIO_SUPPORT" value=".*"/Param name="MTK_HIFIAUDIO_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_BESLOUDNESS_SUPPORT" value=".*"/Param name="MTK_BESLOUDNESS_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_USB_PHONECALL" value=".*"/Param name="MTK_USB_PHONECALL" value="AP"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_NUMBER_OF_SPEAKER" value=".*"/Param name="MTK_AUDIO_NUMBER_OF_SPEAKER" value="1"/g' $APAR
-sed -i 's/Param name="MTK_A2DP_OFFLOAD_SUPPORT" value=".*"/Param name="MTK_A2DP_OFFLOAD_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_TTY_SUPPORT" value=".*"/Param name="v" value="yes"/g' $APAR
-sed -i 's/Param name="VIR_WIFI_ONLY_SUPPORT" value=".*"/Param name="VIR_WIFI_ONLY_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="VIR_3G_DATA_ONLY_SUPPORT" value=".*"/Param name="VIR_3G_DATA_ONLY_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="VIR_ASR_SUPPORT" value=".*"/Param name="VIR_ASR_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="VIR_VOIP_NORMAL_DMNR_SUPPORT" value=".*"/Param name="VIR_VOIP_NORMAL_DMNR_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="VIR_VOIP_HANDSFREE_DMNR_SUPPORT" value=".*"/Param name="VIR_VOIP_HANDSFREE_DMNR_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="VIR_NO_SPEECH" value=".*"/Param name="VIR_NO_SPEECH" value="no"/g' $APAR
-sed -i 's/Param name="VIR_INCALL_NORMAL_DMNR_SUPPORT" value=".*"/Param name="VIR_INCALL_NORMAL_DMNR_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="VIR_INCALL_HANDSFREE_DMNR_SUPPORT" value=".*"/Param name="VIR_INCALL_HANDSFREE_DMNR_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="VIR_VOICE_UNLOCK_SUPPORT" value=".*"/Param name="VIR_VOICE_UNLOCK_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V5" value=".*"/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V5" value="yes"/g' $APAR
-sed -i 's/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V4" value=".*"/Param name="VIR_AUDIO_BLOUD_CUSTOMPARAMETER_V4" value="no"/g' $APAR
-sed -i 's/Param name="VIR_MAGI_CONFERENCE_SUPPORT" value=".*"/Param name="VIR_MAGI_CONFERENCE_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_HIERARCHICAL_PARAM_SUPPORT" value=".*"/Param name="MTK_AUDIO_HIERARCHICAL_PARAM_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_AUDIO_TUNING_TOOL_V2_PHASE" value=".*"/Param name="MTK_AUDIO_TUNING_TOOL_V2_PHASE" value="yes"/g' $APAR
-sed -i 's/Param name="VIR_MTK_VOIP_IIR_ENH_SUPPORT" value=".*"/Param name="VIR_MTK_VOIP_IIR_ENH_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="VIR_MTK_VOIP_IIR_MIC_SUPPORT" value=".*"/Param name="VIR_MTK_VOIP_IIR_MIC_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="5_POLE_HS_SUPPORT" value=".*"/Param name="5_POLE_HS_SUPPORT" value=""/g' $APAR
-sed -i 's/Param name="VIR_MTK_USB_PHONECALL" value=".*"/Param name="VIR_MTK_USB_PHONECALL" value="yes"/g' $APAR
-sed -i 's/Param name="SPK_PATH_NO_ANA" value=".*"/Param name="SPK_PATH_NO_ANA" value="yes"/g' $APAR
-sed -i 's/Param name="RCV_PATH_INT" value=".*"/Param name="RCV_PATH_INT" value="yes"/g' $APAR
-sed -i 's/Param name="SPH_PARAM_VERSION" value=".*"/Param name="SPH_PARAM_VERSION" value="3.0"/g' $APAR
-sed -i 's/Param name="SPH_PARAM_TTY" value=".*"/Param name="SPH_PARAM_TTY" value="yes"/g' $APAR
-sed -i 's/Param name="FIX_WB_ENH" value=".*"/Param name="FIX_WB_ENH" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_IIR_ENH_SUPPORT" value=".*"/Param name="MTK_IIR_MIC_SUPPORT" value="yes"/g' $APAR
-sed -i 's/Param name="MTK_IIR_MIC_SUPPORT" value=".*"/Param name="MTK_IIR_MIC_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="MTK_FIR_IIR_ENH_SUPPORT" value=".*"/Param name="MTK_FIR_IIR_ENH_SUPPORT" value="no"/g' $APAR
-sed -i 's/Param name="SPH_PARAM_SV" value=".*"/Param name="SPH_PARAM_SV" value="yes"/g' $APAR
-sed -i 's/Param name="VIR_SCENE_CUSTOMIZATION_SUPPORT" value=".*"/Param name="VIR_SCENE_CUSTOMIZATION_SUPPORT" value="yes"/g' $APAR
+for OAIMPAUPARMS in ${IMPAUPARMS}; do 
+IMPAUPARM="$MODPATH$(echo $OAIMPAUPARMS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
+cp_ch -f $ORIGDIR$OAIMPAUPARMS $IMPAUPARM
+sed -i 's/\t/  /g' $IMPAUPARM
+sed -i 's/Param name="hp_impedance_enable" value="0"/Param name="hp_impedance_enable" value="1"/g' $IMPAUPARM
 done
 fi
 
+ui_print " "                 
+ui_print "   ########################================ 60% done!"
+
+#patching media codecs files
 if [ "$STEP7" == "true" ]; then
-for OAURCONFHIFI in ${AURCONFHIFIS}; do 
-AURCONFHIFI="$MODPATH$(echo $OAURCONFHIFI | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
-cp_ch -f $ORIGDIR$OAURCONFHIFI $AURCONFHIFI
-sed -i 's/\t/  /g' $AURCONFHIFI
-if [ "$RN8PRO" ]; then
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="sample_rate"]' "48000,96000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_dcrflt"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-fi
-if [ "$R10X4GNOTE9" ]; then
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="sample_rate"]' "48000,96000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_dcrflt"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-fi
-if [ "$R10X4GNOTE9" ]; then
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="sample_rate"]' "48000,96000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_dcrflt"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-fi
-if [ "$R10X5G" ]; then
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_bessound"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="sample_rate"]' "48000,96000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="smartpa_tfaxxxx"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_8_24_BIT"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="mtk_dcrflt"]/components/component[@name="sample_rate"]' "8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,128000,176400,192000,384000"
-patch_xml -u $AURCONFHIFI '/aurisys_config/hal_librarys/library[@name="aurisys_demo"]/components/component[@name="audio_format"]' "AUDIO_FORMAT_PCM_32_BIT"
-fi
-done
-fi
-
-#mcodecs
-if [ "$STEP8" == "true" ]; then
 for OMCODECS in ${MCODECS}; do
-MEDIACODECS="$MODPATH$(echo $OMCODECS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
+MEDIACODECS="$MODPATH$(echo $OMCODECS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
 cp_ch -f $ORIGDIR$OMCODECS $MEDIACODECS
 sed -i 's/\t/  /g' $MEDIACODECS
+sed -i 's/<<!--.*-->>//; s/<!--.*-->>//; s/<<!--.*-->//; s/<!--.*-->//; /<!--/,/-->/d; /^ *#/d; /^ *$/d' $MEDIACODECS
 sed -i 's/name="sample-rate" ranges="8000,11025,12000,16000,22050,24000,32000,44100,48000"/name="sample-rate" ranges="1-655350"/g' $MEDIACODECS
 sed -i 's/name="sample-rate" ranges="32000,44100,48000"/name="sample-rate" ranges="1-655350"/g' $MEDIACODECS
 sed -i 's/name="sample-rate" ranges="48000"/name="sample-rate" ranges="1-655350"/g' $MEDIACODECS
@@ -779,13 +469,14 @@ sed -i 's/name="bitrate" range="32000-640000"/name="bitrate" range="1-21000000"/
 sed -i 's/name="bitrate" range="32000-6144000"/name="bitrate" range="1-21000000"/g' $MEDIACODECS
 sed -i 's/name="bitrate" range="16000-2688000"/name="bitrate" range="1-21000000"/g' $MEDIACODECS
 sed -i 's/name="bitrate" range="64000"/name="bitrate" range="1-21000000"/g' $MEDIACODECS
+sed -i '/^ *#/d; /^ *$/d' $MEDIACODECS
 done
 fi
 
-if [ "$STEP9" == "true" ]; then
+if [ "$STEP8" == "true" ]; then
 #dsm
 for ODSMS in ${DSMS}; do
-DSM="$MODPATH$(echo $ODSMS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
+DSM="$MODPATH$(echo $ODSMS | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g" | sed "s|^/my_product|/system/my_product|g" | sed "s|^/odm|/system/vendor/odm|g" | sed "s|^/mi_ext|/system/mi_ext|g")"
 cp_ch -f $ORIGDIR$ODSMS $DSM
 sed -i 's/\t/  /g' $DSM
 sed -i 's/params type="*"/params type="float"/g' $DSM
@@ -793,130 +484,85 @@ sed -i 's/currentv="*"/currentv="123.000000"/g' $DSM
 done
 fi
 
+ui_print " "                 
+ui_print "   ################################======== 80% done!"
 
+if [ "$STEP9" == "true" ]; then
+echo -e "\n# Better parameters audio by NLSound Team
+flac.sw.decoder.24bit.support=true
+vendor.audio.flac.sw.decoder.24bit=true
+vendor.audio.aac.sw.decoder.24bit=true
+vendor.audio.mp3.sw.decoder.24bit=true
+vendor.audio.ac3.sw.decoder.24bit=true
+vendor.audio.eac3.sw.decoder.24bit=true
+vendor.audio.eac3_joc.sw.decoder.24bit=true
+vendor.audio.ac4.sw.decoder.24bit=true
+vendor.audio.opus.sw.decoder.24bit=true
+vendor.audio.dsp.sw.decoder.24bit=true
+vendor.audio.dsd.sw.decoder.24bit=true
+vendor.audio.flac.sw.encoder.24bit=true
+vendor.audio.aac.sw.encoder.24bit=true
+vendor.audio.mp3.sw.encoder.24bit=true
+vendor.audio.raw.sw.encoder.24bit=true
+vendor.audio.ac3.sw.encoder.24bit=true
+vendor.audio.eac3.sw.encoder.24bit=true
+vendor.audio.eac3_joc.sw.encoder.24bit=true
+vendor.audio.ac4.sw.encoder.24bit=true
+vendor.audio.opus.sw.encoder.24bit=true
+vendor.audio.dsp.sw.encoder.24bit=true
+vendor.audio.dsd.sw.encoder.24bit=true
 
-if [ "$STEP10" == "true" ]; then
-for OFILE in ${AECFGS}; do
-FILE="$MODPATH$(echo $OFILE | sed "s|^/vendor|/system/vendor|g" | sed "s|^/system_ext|/system/system_ext|g" | sed "s|^/product|/system/product|g")"
-cp_ch -f $ORIGDIR$OFILE $FILE
-sed -i 's/\t/  /g' $FILE
-altmemes_confxml $FILE
-memes_confxml "dirac_gef" "dirac_gef" "$DYNLIBPATCH\/lib\/soundfx" "libdiraceffect.so" "3799d6d1-22c5-43c3-b3ec-d664cf8d2f0d"
-effects_patching -post "$FILE" "music" "dirac_gef"
-done
-
-mkdir -p $MODPATH/system/vendor/etc/dirac $MODPATH/system/vendor/lib/rfsa/adsp $MODPATH/system/vendor/lib/soundfx
-cp_ch $NEWdirac/diracvdd.bin $MODPATH/system/vendor/etc/
-cp_ch $NEWdirac/interfacedb $MODPATH/system/vendor/etc/dirac
-cp_ch $NEWdirac/dirac_resource.dar $MODPATH/system/vendor/lib/rfsa/adsp
-cp_ch $NEWdirac/dirac.so $MODPATH/system/vendor/lib/rfsa/adsp
-cp_ch $NEWdirac/libdirac-capiv2.so $MODPATH/system/vendor/lib/rfsa/adsp
-cp_ch $NEWdirac/libdiraceffect.so $MODPATH/system/vendor/lib/soundfx
-
-echo -e '\n# Patch dirac
-persist.dirac.acs.controller=gef
-persist.dirac.gef.oppo.syss=true
-persist.dirac.config=64
-persist.dirac.gef.exs.did=50,50
-persist.dirac.gef.ext.did=750,750,750,750
-persist.dirac.gef.ins.did=50,50,50
-persist.dirac.gef.int.did=750,750,750,750
-persist.dirac.gef.ext.appt=0x00011130,0x00011134,0x00011136
-persist.dirac.gef.exs.appt=0x00011130,0x00011131
-persist.dirac.gef.int.appt=0x00011130,0x00011134,0x00011136
-persist.dirac.gef.ins.appt=0x00011130,0x00011131
-persist.dirac.gef.exs.mid=268512739
-persist.dirac.gef.ext.mid=268512737
-persist.dirac.gef.ins.mid=268512738
-persist.dirac.gef.int.mid=268512736
-persist.dirac.path=/vendor/etc/dirac
-ro.dirac.acs.storeSettings=1
-persist.dirac.acs.ignore_error=1
-ro.audio.soundfx.dirac=true
-ro.vendor.audio.soundfx.type=dirac
-persist.audio.dirac.speaker=true
-persist.audio.dirac.eq=5.0,4.0,3.0,3.0,4.0,1.0,0.0
-persist.audio.dirac.headset=1
-persist.audio.dirac.music.state=1' >> $MODPATH/system.prop
-fi
-
-if [ "$STEP11" == "true" ]; then
-echo -e "\n#
-ro.mediacodec.min_sample_rate=7350
-ro.mediacodec.max_sample_rate=2822400
-vendor.audio.tunnel.encode=true
-tunnel.audio.encode=true
-qc.tunnel.audio.encode=true
-mpq.audio.decode=true
-audio.nat.codec.enabled=1
-audio.decoder_override_check=true
-
-vendor.audio.aac.complexity.default=10
-vendor.audio.aac.quality=100
-vendor.audio.vorbis.complexity.default=10
-vendor.audio.vorbis.quality=100
-vendor.audio.mp3.complexity.default=10
-vendor.audio.mp3.quality=100
-vendor.audio.mpegh.complexity.default=10
-vendor.audio.mpegh.quality=100
-vendor.audio.amrnb.complexity.default=10
-vendor.audio.amrnb.quality=100
-vendor.audio.amrwb.complexity.default=10
-vendor.audio.amrwb.quality=100
-vendor.audio.g711.alaw.complexity.default=10
-vendor.audio.g711.alaw.quality=100
-vendor.audio.g711.mlaw.complexity.default=10
-vendor.audio.g711.mlaw.quality=100
-vendor.audio.opus.complexity.default=10
-vendor.audio.opus.quality=100
-vendor.audio.raw.complexity.default=10
-vendor.audio.raw.quality=100
 vendor.audio.flac.complexity.default=10
 vendor.audio.flac.quality=100
+vendor.audio.aac.complexity.default=10
+vendor.audio.aac.quality=100
+vendor.audio.mp3.complexity.default=10
+vendor.audio.mp3.quality=100
+vendor.audio.ac3.complexity.default=10
+vendor.audio.ac3.quality=100
+vendor.audio.eac3.complexity.default=10
+vendor.audio.eac3.quality=100
+vendor.audio.eac3_joc.complexity.default=10
+vendor.audio.eac3_joc.quality=100
+vendor.audio.ac4.complexity.default=10
+vendor.audio.ac4.quality=100
+vendor.audio.opus.complexity.default=10
+vendor.audio.opus.quality=100
 vendor.audio.dsp.complexity.default=10
 vendor.audio.dsp.quality=100
 vendor.audio.dsd.complexity.default=10
 vendor.audio.dsd.quality=100
-vendor.audio.alac.complexity.default=10
-vendor.audio.alac.quality=100
 
-use.non-omx.alac.decoder=false
-use.non-omx.mpegh.decoder=false
-use.non-omx.vorbis.decoder=false
-use.non-omx.wma.decoder=false
-use.non-omx.amrnb.decoder=false
-use.non-omx.amrwb.decoder=false
-use.non-omx.mhas.decoder=false
-use.non-omx.g711.alaw.decoder=false
-use.non-omx.g711.mlaw.sw.decoder=false
-use.non-omx.opus.decoder=false
+use.non-omx.flac.decoder=false
+use.non-omx.aac.decoder=false
+use.non-omx.mp3.decoder=false
 use.non-omx.raw.decoder=false
-use.non-omx.qti.decoder=false
+use.non-omx.ac3.decoder=false
+use.non-omx.ac4.decoder=false
+use.non-omx.opus.decoder=false
 use.non-omx.dsp.decoder=false
 use.non-omx.dsd.decoder=false
-use.non-omx.alac.encoder=false
-use.non-omx.mpegh.encoder=false
 use.non-omx.flac.encoder=false
 use.non-omx.aac.encoder=false
-use.non-omx.vorbis.encoder=false
-use.non-omx.wma.encoder=false
 use.non-omx.mp3.encoder=false
-use.non-omx.amrnb.encoder=false
-use.non-omx.amrwb.encoder=false
-use.non-omx.mhas.encoder=false
-use.non-omx.g711.alaw.encoder=false
-use.non-omx.g711.mlaw.sw.encoder=false
-use.non-omx.opus.encoder=false
 use.non-omx.raw.encoder=false
-use.non-omx.qti.encoder=false
+use.non-omx.ac3.encoder=false
+use.non-omx.ac4.encoder=false
+use.non-omx.opus.encoder=false
 use.non-omx.dsp.encoder=false
 use.non-omx.dsd.encoder=false
 
-media.aac_51_output_enabled=true
-mm.enable.smoothstreaming=true
-mmp.enable.3g2=true
-mm.enable.qcom_parser=63963135
-vendor.mm.enable.qcom_parser=63963135
+af.thread.throttle=0
+af.fast_downmix=1
+ro.vendor.af.raise_bt_thread_prio=true
+
+audio.decoder_override_check=true
+media.stagefright.thumbnail.prefer_hw_codecs=true
+
+vendor.audio.tunnel.encode=true
+tunnel.audio.encode=true
+tunnel.audiovideo.decode=true
+tunnel.decode=true
 
 lpa.decode=false
 lpa30.decode=false
@@ -924,196 +570,251 @@ lpa.use-stagefright=false
 lpa.releaselock=false
 
 audio.playback.mch.downsample=false
-vendor.audio.playback.mch.downsample=false
 persist.vendor.audio.playback.mch.downsample=false
 
-ro.hardware.hifi.support=true
+vendor.audio.feature.dsm_feedback.enable=true
+vendor.audio.feature.dynamic_ecns.enable=true
+vendor.audio.feature.external_dsp.enable=true
+vendor.audio.feature.external_speaker.enable=true
+vendor.audio.feature.external_speaker_tfa.enable=true
+vendor.audio.feature.spkr_prot.enable=false
+vendor.audio.feature.ext_hw_plugin.enable=true
+vendor.audio.feature.keep_alive.enable=true
+vendor.audio.feature.compress_meta_data.enable=false
+vendor.audio.feature.compr_cap.enable=false
+vendor.audio.feature.devicestate_listener.enable=false
+vendor.audio.feature.thermal_listener.enable=false
+vendor.audio.feature.power_mode.enable=true
+vendor.audio.feature.hifi_audio.enable=true
+vendor.audio.feature.deepbuffer_as_primary.enable=false 
+vendor.audio.feature.dmabuf.cma.memory.enable=true
+vendor.audio.feature.battery_listener.enable=false
+vendor.audio.feature.custom_stereo.enable=true
+vendor.audio.feature.wsa.enable=true
+
+vendor.audio.usb.super_hifi=true
 ro.audio.hifi=true
+ro.config.hifi_always_on=true
+ro.config.hifi_enhance_support=1
+ro.hardware.hifi.support=true
 ro.vendor.audio.hifi=true
 persist.audio.hifi=true
-persist.vendor.audio.hifi=true
-persist.audio.hifi.volume=92
+persist.audio.hifi.volume=1
 persist.audio.hifi.int_codec=true
+persist.audio.hifi_adv_support=1
+persist.audio.hifi_dac=ON
+persist.vendor.audio.hifi_enabled=true
+persist.audio.hifi.int_codec=true 
 persist.vendor.audio.hifi.int_codec=true
+ro.config.hifi_config_state=2
 
+audio.spatializer.effect.util_clamp_min=300
 effect.reverb.pcm=1
-vendor.audio.safx.pbe.enabled=true
-vendor.audio.soundfx.usb=false
+sys.vendor.atmos.passthrough=enable
+vendor.audio.dolby.ds2.enabled=true
 vendor.audio.keep_alive.disabled=false
+vendor.audio.dolby.control.support=true
+vendor.audio.dolby.control.tunning.by.volume.support=true
+ro.vendor.audio.elus.enable=true
+ro.audio.spatializer_enabled=true
 ro.vendor.audio.soundfx.usb=false
+ro.vendor.audio.sfx.speaker=false 
+ro.vendor.audio.sfx.earadj=false
+ro.vendor.audio.sfx.scenario=false 
+ro.vendor.audio.sfx.independentequalizer=false
+ro.vendor.audio.surround.support=true
+ro.vendor.audio.dolby.eq.half=true
+ro.vendor.audio.dolby.surround.enable=true
+ro.vendor.audio.dolby.fade_switch=true
+ro.vendor.media.video.meeting.support=true
+persist.vendor.audio.ambisonic.capture=true
+persist.vendor.audio.ambisonic.auto.profile=true
+
+audio.record.delay=0
+vendor.voice.dsd.playback.conc.disabled=false
+vendor.audio.3daudio.record.enable=true
+vendor.audio.hdr.spf.record.enable=true
+vendor.audio.hdr.record.enable=true
+vendor.audio.chk.cal.us=1
+ro.vendor.audio.recording.hd=true
+ro.vendor.audio.sdk.ssr=false
+persist.audio.lowlatency.rec=true
+persist.vendor.audio.endcall.delay=0
+persist.vendor.audio.record.ull.support=true
+
+audio.offload.24bit.enable=1
+vendor.usb.analog_audioacc_disabled=false
+vendor.audio.enable.cirrus.speaker=true
+vendor.audio.sys.init=true
+vendor.audio.trace.enable=true
+vendor.audio.powerop=true
+vendor.audio.read.wsatz.type=true
+vendor.audio.powerhal.power.ul=true
+vendor.audio.powerhal.power.dl=true
+vendor.audio.powerhal.power.hi_bitrate=true
+vendor.audio.hal.boot.timeout.ms=5000
+vendor.audio.LL.coeff=100
+vendor.audio.caretaker.at=true
+vendor.audio.matrix.limiter.enable=0
+vendor.audio.capture.enforce_legacy_copp_sr=true
+vendor.audio.hal.output.suspend.supported=false
+vendor.audio.snd_card.open.retries=50
+vendor.audio.volume.headset.gain.depcal=true
+vendor.audio.camera.unsupport_low_latency=false 
+vendor.audio.tfa9874.dsp.enabled=true
+vendor.audio.lowpower=false
+vendor.audio.compress_capture.enabled=false 
+vendor.audio.compress_capture.aac=false
+vendor.audio.rt.mode=23
+vendor.audio.rt.mode.onlyfast=false 
+vendor.audio.cpu.sched=31
+vendor.audio.cpu.sched.cpuset=248
+vendor.audio.cpu.sched.cpuset.binder=255
+vendor.audio.cpu.sched.cpuset.at=248
+vendor.audio.cpu.sched.cpuset.af=248
+vendor.audio.cpu.sched.cpuset.hb=248
+vendor.audio.cpu.sched.cpuset.hso=248
+vendor.audio.cpu.sched.cpuset.he=248
+vendor.audio.cpu.sched.cpus=8
+vendor.audio.cpu.sched.onlyfast=false 
+vendor.media.amplayer.audiolimiter=false 
+vendor.media.amplayer.videolimiter=false 
+vendor.media.audio.ms12.downmixmode=on
+ro.audio.resampler.psd.enable_at_samplerate=192000
+ro.audio.resampler.psd.halflength=240
+ro.audio.resampler.psd.stopband=20
+ro.audio.resampler.psd.cutoff_percent=100
+ro.audio.resampler.psd.tbwcheat=110
+ro.audio.soundtrigger.lowpower=false
+ro.vendor.audio.soundtrigger.lowpower=false
+ro.vendor.audio_tunning.dual_spk=2
+ro.vendor.audio_tunning.nr=1
+ro.vendor.audio.frame_count_needed_constant=32768
+ro.vendor.audio.soundtrigger.wakeupword=5
+ro.vendor.audio.ce.compensation.need=true
+ro.vendor.audio.ce.compensation.value=5
+ro.vendor.audio.enhance.support=true
+ro.vendor.audio.gain.support=true
+ro.vendor.audio.spk.clean=false
+ro.vendor.audio.3d.audio.support=true
+ro.vendor.audio.pastandby=true
+ro.vendor.audio.dpaudio=true
+ro.vendor.audio.spk.stereo=true
+ro.vendor.audio.dualadc.support=true
+ro.vendor.audio.meeting.mode=true
+ro.vendor.media.support.omx2=true
+ro.vendor.platform.disable.audiorawout=false
+ro.vendor.platform.has.realoutputmode=true
+ro.vendor.platform.support.dolby=true
+ro.vendor.platform.support.dts=true
+ro.vendor.usb.support_analog_audio=true
+ro.mediaserver.64b.enable=true
+persist.audio.hp=true
+persist.config.speaker_protect_enabled=0
+#test3
+persist.vendor.audio.spv3.enable=false
+
+persist.sys.audio.source=true
+persist.vendor.audio.bcl.enabled=false
+persist.vendor.audio.cca.enabled=true
+persist.vendor.audio.misoundasc=true
+persist.vendor.audio.okg_hotword_ext_dsp=true
+persist.vendor.audio.format.24bit=true
+persist.vendor.audio.speaker.stereo=true
+persist.vendor.audio_hal.dsp_bit_width_enforce_mode=24
+
+persist.vendor.audio.ll_playback_bargein=true
+persist.vendor.audio.delta.refresh=true
+
+#test
+alsa.mixer.playback.master=DAC1
+#test2
+ro.config.hw_audio_plus=true
+ro.mtk_audenh_support=1
+
+persist.vendor.audio.delta.refresh=true 
+ro.vendor.audio.camera.bt.record.support=true
+ro.vendor.mtk_hifiaudio_support=1
+ro.vendor.mtk_audio_alac_support=1
+ro.vendor.mtk_audio_ape_support=1
+ro.vendor.mtk_audio_flac_support=1
+ro.vendor.mtk_audio_tuning_tool_ver=V2.2
+ro.vendor.mtk_besloudness_support=1
+vendor.audio.usb.perio=2625
+vendor.audio.usb.period_us=2625" >> $PROP
+#exit
+fi
+
+if [ "$STEP10" == "true" ]; then
+echo -e "\n# Bluetooth parameters by NLSound Team
+config.disable_bluetooth=false
+bluetooth.profile.a2dp.source.enabled=true
+vendor.audio.effect.a2dp.enable=1
+vendor.bluetooth.ldac.abr=false 
+vendor.media.audiohal.btwbs=true
+ro.vendor.audio.hw.aac.encoder=true
+ro.vendor.audio.hw.aac.decoder=true
+persist.service.btui.use_aptx=1
+persist.bt.a2dp.aac_disable=false
+persist.bt.sbc_hd_enabled=1
+persist.bt.power.down=false 
+persist.vendor.audio.sys.a2h_delay_for_a2dp=50
+persist.vendor.btstack.enable.lpa=false
+persist.vendor.bt.a2dp.aac_whitelist=false
+persist.vendor.bt.aac_frm_ctl.enabled=true
+persist.vendor.bt.aac_vbr_frm_ctl.enabled=true
+persist.vendor.bt.splita2dp.44_1_war=true
+persist.vendor.btstack.enable.twsplussho=true
+persist.vendor.btstack.enable.twsplus=true
+persist.vendor.bluetooth.prefferedrole=master
+persist.vendor.bluetooth.leaudio_mode=off
+persist.bluetooth.a2dp_offload.aidl_flag=aidl
+persist.bluetooth.dualconnection.supported=true
+persist.bluetooth.a2dp_aac_abr.enable=false
+persist.bluetooth.bluetooth_audio_hal.disabled=false
+persist.bluetooth.sbc_hd_higher_bitrate=1
+persist.sys.fflag.override.settings_bluetooth_hearing_aid=true
+#test
+persist.vendor.bluetooth.connection_improve=yes" >> $PROP
+fi
+
+if [ "$STEP11" == "true" ]; then
+echo -e "\n #Disable all effects by NLSound Team
+ro.audio.ignore_effects=true
+ro.vendor.audio.ignore_effects=true
+vendor.audio.ignore_effects=true
+persist.audio.ignore_effects=true
+persis.vendor.audio.ignore_effects=true
+persist.sys.phh.disable_audio_effects=1
+ro.audio.disable_audio_effects=1
+vendor.audio.disable_audio_effects=1
+low.pass.filter=Off
+midle.pass.filter=Off
+high.pass.filter=Off
+band.pass.filter=Off
+LPF=Off
+MPF=Off
+HPF=Off
+BPF=Off
+persist.audio.uhqa=1
+persist.vendor.audio.uhqa=1
+ro.platform.disable.audiorawout=true
+ro.vendor.platform.disable.audiorawout=true
 ro.vendor.audio.sfx.speaker=false
 ro.vendor.audio.sfx.earadj=false
 ro.vendor.audio.sfx.scenario=false
 ro.vendor.audio.sfx.audiovisual=false
 ro.vendor.audio.sfx.independentequalizer=false
-ro.vendor.audio.3d.audio.support=true
-persist.vendor.audio.ambisonic.capture=true
-persist.vendor.audio.ambisonic.auto.profile=true
+vendor.audio.soundfx.usb=false
+ro.vendor.audio.soundfx.usb=false
+ro.vendor.soundfx.type=none
+ro.vendor.audio.soundfx.type=none
+persist.sys_phh.disable_audio_effects=1
 
-vendor.voice.dsd.playback.conc.disabled=false
-vendor.audio.hdr.record.enable=true
-vendor.audio.3daudio.record.enable=true
-ro.vendor.audio.recording.hd=true
-ro.ril.enable.amr.wideband=1
-persist.audio.lowlatency.rec=true
-
-vendor.audio.matrix.limiter.enable=0
-vendor.audio.capture.enforce_legacy_copp_sr=true
-vendor.audio.hal.output.suspend.supported=true
-vendor.audio.snd_card.open.retries=50
-vendor.audio.volume.headset.gain.depcal=true
-vendor.audio.tfa9874.dsp.enabled=true
-ro.audio.soundtrigger.lowpower=false
-ro.vendor.audio.soundtrigger.adjconf=true
-ro.vendor.audio.enhance.support=true
-ro.vendor.audio.gain.support=true
-persist.vendor.audio.ll_playback_bargein=true
-persist.vendor.audio.bcl.enabled=false
-persist.vendor.audio.delta.refresh=true
-
-ro.audio.resampler.psd.enable_at_samplerate=192000
-ro.audio.resampler.psd.stopband=179
-ro.audio.resampler.psd.halflength=408
-ro.audio.resampler.psd.cutoff_percent=99
-ro.audio.resampler.psd.tbwcheat=100
-
-vendor.qc2audio.suspend.enabled=true
-vendor.qc2audio.per_frame.flac.dec.enabled=true
-vendor.audio.lowpower=false
-
-vendor.audio.c2.preferred=true
-debug.c2.use_dmabufheaps=1
-ro.vendor.audio.sfx.harmankardon=true
-
-ro.vendor.audio.bass.enhancer.enable=true
-audio.safemedia.bypass=true
-ro.audio.usb.period_us=2625
-
-#change usb period
-ro.audio.usb.period_us=50000
-vendor.audio.usb.perio=50000
-vendor.audio.usb.out.period_us=50000
-vendor.audio.usb.out.period_count=2
-
-#new11102022
-persist.vendor.audio.spv4.enable=true
-ro.vendor.audio.ns.support=true
-ro.vendor.audio.enhance.support=true
-ro.vendor.audio.karaok.support=true
-ro.audio.monitorRotation=true
-ro.audio.recording.hd=true
-ro.vendor.audio.spk.clean=true
-persist.vendor.vcb.enable=true
-persist.vendor.vcb.ability=true
-defaults.pcm.rate_converter=samplerate_best
-ro.vendor.audio.sdk.ssr=true
-ro.vendor.audio.dump.mixer=false
-ro.audio.playbackScene=false
-ro.vendor.audio.playbackScene=false
-ro.vendor.audio.recording.hd=true
-ro.vendor.audio.multiroute=true
-ro.vendor.audio.sos=true
-ro.vendor.audio.voice.change.support=true
-ro.vendor.audio.voice.change.youme.support=true
-ro.vendor.audio.spk.stereo=true
-ro.vendor.audio.spk.clean=true
-ro.vendor.audio.vocal.support=true
-ro.vendor.audio.sfx.independentequalizer=false
-ro.vendor.audio.sfx.earadj=false
-ro.vendor.audio.sfx.speaker=true
-ro.vendor.audio.sfx.spk.movie=true
-ro.vendor.audio.gain.support=true
-ro.vendor.audio.karaok.support=true
-ro.vendor.camera.karaok.support=true
-ro.vendor.audio.ns.support=true
-ro.vendor.audio.enhance.support=true
-ro.audio.monitorRotation=true
-ro.vendor.audio.monitorRotation=true
-ro.vendor.audio.game.mode=true
-ro.vendor.audio.game.vibrate=true
-ro.vendor.audio.aiasst.support=true
-ro.vendor.audio.soundtrigger.lowpower=false
-ro.vendor.audio.soundtrigger.adjconf=false
-ro.vendor.audio.soundtrigger.pangaea=0
-ro.vendor.audio.soundtrigger.sva-5.0=1
-ro.vendor.audio.soundtrigger.sva-6.0=1
-ro.vendor.audio.soundfx.usb=true
-ro.vendor.audio.ring.filter=true
-ro.vendor.audio.feature.fade=true
-ro.vendor.audio.us.proximity=false
-ro.vendor.audio.camera.loopback.support=true
-ro.vendor.audio.support.sound.id=true
-ro.vendor.standard.video.enable=true
-ro.vendor.audio.videobox.switch=true
-ro.vendor.video_box.version=2
-ro.vendor.audio.feature.spatial=7
-ro.vendor.audio.multichannel.5point1.headset=true
-ro.vendor.audio.multichannel.5point1=true
-ro.vendor.audio.notify5Point1InUse=true
-ro.vendor.audio.multi.channel=true
-ro.vendor.audio.dolby.eq.half=false
-ro.vendor.audio.dolby.vision.support=false
-ro.vendor.audio.dolby.vision.capture.support=false
-ro.vendor.audio.dolby.surround.enable=false
-ro.vendor.audio.surround.support=false
-ro.vendor.audio.surround.headphone.only=false
-ro.vendor.audio.elus.enable=true
-ro.vendor.audio.sfx.scenario=true
-
-audio.high.resolution.enable=true
-vendor.audio.high.resolution.enable=true
-vendor.audio.offload.buffer.size.kb=384
-audio.native.dsd.buffer.size.kb=1024
-vendor.audio.native.dsd.buffer.size.kb=1024
-audio.truehd.buffer.size.kb=256
-vendor.audio.truehd.buffer.size.kb=256
-
-vendor.audio.matrix.limiter.enable=0
-vendor.audio.capture.enforce_legacy_copp_sr=true
-vendor.audio.hal.output.suspend.supported=true
-vendor.audio.snd_card.open.retries=50
-vendor.audio.volume.headset.gain.depcal=true
-vendor.audio.tfa9874.dsp.enabled=true
-ro.audio.soundtrigger.lowpower=false
-ro.vendor.audio.soundtrigger.adjconf=true
-ro.vendor.audio.ns.support=true
-ro.vendor.audio.enhance.support=true
-ro.vendor.audio.gain.support=true
-persist.vendor.audio.ll_playback_bargein=true
-persist.vendor.audio.bcl.enabled=false
-persist.vendor.audio.format.24bit=true
-persist.vendor.audio.delta.refresh=true" >> $MODPATH/system.prop
+#add07092023
+persist.sys.phh.disable_soundvolume_effect=1
+ro.audio.spatializer_enabled=true" >> $PROP
 fi
-
-if [ "$STEP12" == "true" ]; then
-echo -e "\n# Bluetooth
-audio.effect.a2dp.enable=1
-vendor.audio.effect.a2dp.enable=1
-qcom.hw.aac.encoder=true
-qcom.hw.aac.decoder=true
-persist.service.btui.use_aptx=1
-persist.bt.enableAptXHD=true
-persist.bt.a2dp.aptx_disable=false
-persist.bt.a2dp.aptx_hd_disable=false
-persist.bt.a2dp.aac_disable=false
-persist.bt.sbc_hd_enabled=1
-persist.vendor.btstack.enable.lpa=false
-persist.vendor.bt.a2dp.aac_whitelist=false
-persist.vendor.bt.aac_frm_ctl.enabled=true
-persist.vendor.bt.aac_vbr_frm_ctl.enabled=true
-persist.vendor.qcom.bluetooth.aac_frm_ctl.enabled=true
-persist.vendor.btstack.enable.twsplussho=true
-persist.vendor.qcom.bluetooth.twsp_state.enabled=false
-persist.bluetooth.sbc_hd_higher_bitrate=1
-persist.sys.fflag.override.settings_bluetooth_hearing_aid=true
-persist.vendor.qcom.bluetooth.aptxadaptiver2_2_support=true
-#new11102022
-persist.rcs.supported=1
-persist.vendor.btstack.enable.swb=true
-persist.vendor.btstack.enable.swbpm=true
-persist.vendor.qcom.bluetooth.enable.swb=true" >> $MODPATH/system.prop
-fi
-
 
 ui_print " "
 ui_print "   ######################################## 100% done!"

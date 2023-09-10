@@ -1,1 +1,7 @@
-
+id=NLSound
+name=NLSound [MTK Devices]
+version=v0.4 STABLE
+versionCode=119
+author=NLSound Team
+description=This module globally improves audio quality when recording video/audio and listening to audio on your device. Support: @nlsound_support | Channel: @nlsound_updates in Telegram
+support=https://t.me/nlsound_support
